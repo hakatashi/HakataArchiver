@@ -18,7 +18,7 @@ export const postSession: APIGatewayProxyHandler = async (event) => {
 	return {
 		statusCode: 200,
 		body: JSON.stringify({
-			message: 'Yay!',
+			message: 'Pohe!',
 			input: event,
 			data: data.Item,
 		}, null, 2),
