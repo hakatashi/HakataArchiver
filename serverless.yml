@@ -36,6 +36,12 @@ provider:
       Resource: '*'
 
 functions:
+  crawlPixiv:
+    handler: handler.crawlPixiv
+    events:
+      - http:
+          method: post
+          path: crawl-pixiv
   postSession:
     handler: handler.postSession
     events:
