@@ -22,6 +22,12 @@ provider:
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
   profile: serverless
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+        - s3:*
+      Resource: '*'
 
 functions:
   postSession:
