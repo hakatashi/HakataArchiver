@@ -26,6 +26,7 @@ provider:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    HAKATASHI_API_KEY: ${env:HAKATASHI_API_KEY}
   profile: ${self:custom.profiles.${self:provider.stage}}
   iamRoleStatements:
     - Effect: Allow
