@@ -8,7 +8,7 @@ import 'source-map-support/register.js';
 import {DynamoDB, S3} from 'aws-sdk';
 import axios from 'axios';
 
-const db = new DynamoDB.DocumentClient();
+const db = new DynamoDB.DocumentClient({convertEmptyValues: true});
 const s3 = new S3();
 
 const PER_PAGE = 48;
@@ -34,80 +34,116 @@ export const crawlPixiv: APIGatewayProxyHandler = async (event) => {
 	const {session} = sessionData.Item;
 
 	for (const visibility of ['show', 'hide']) {
-		const offset = 0;
+		let {offset} = body;
 
-		await wait(1000);
-		const {data} = await axios.get('https://www.pixiv.net/ajax/user/1817093/illusts/bookmarks', {
-			params: {
-				tag: '',
-				offset,
-				limit: PER_PAGE,
-				rest: visibility,
-			},
-			headers: {
-				Cookie: `PHPSESSID=${session}`,
-			},
-		});
+		const newWorks = [];
+		while (true) {
+			await wait(1000);
+			const {data} = await axios.get('https://www.pixiv.net/ajax/user/1817093/illusts/bookmarks', {
+				params: {
+					tag: '',
+					offset,
+					limit: PER_PAGE,
+					rest: visibility,
+				},
+				headers: {
+					Cookie: `PHPSESSID=${session}`,
+				},
+			});
 
-		if (data.error) {
-			console.error(data.message);
-			continue;
+			if (data.error) {
+				console.error(data.message);
+				continue;
+			}
+
+			const {works} = data.body;
+			if (works.length === 0) {
+				break;
+			}
+
+			const workIds = works.map((work) => work.illustId);
+
+			const existingEntriesResponse = await db.batchGet({
+				RequestItems: {
+					'hakataarchive-entries-pixiv': {
+						Keys: workIds.map((id) => ({illustId: id})),
+					},
+				},
+			}).promise();
+			const existingEntries = new Set(existingEntriesResponse.Responses['hakataarchive-entries-pixiv'].map((entry) => entry.illustId));
+
+			for (const work of works) {
+				if (!existingEntries.has(work.illustId)) {
+					newWorks.push(work);
+				}
+			}
+
+			if (existingEntries.size > 0) {
+				break;
+			}
+
+			offset += PER_PAGE;
 		}
 
-		const {works} = data.body;
-		const workIds = works.map((work) => work.illustId);
-
-		const existingEntriesResponse = await db.batchGet({
-			RequestItems: {
-				'hakataarchive-entries-pixiv': {
-					Keys: workIds.map((id) => ({illustId: id})),
-				},
-			},
-		}).promise();
-		const existingEntries = new Set(existingEntriesResponse.Responses['hakataarchive-entries-pixiv'].map((entry) => entry.illustId));
+		// oldest first
+		newWorks.reverse();
+		console.log(`Fetched ${newWorks.length} new illusts`);
 
 		const updates = [];
-		for (const work of works) {
-			if (!existingEntries.has(work.illustId)) {
-				console.log(`Archiving illust data ${work.illustId}...`);
+		for (const work of newWorks) {
+			console.log(`Archiving illust data ${work.illustId}...`);
 
+			await wait(1000);
+			const {data: {body: pages}} = await axios.get(`https://www.pixiv.net/ajax/illust/${work.illustId}/pages`, {
+				headers: {
+					Cookie: `PHPSESSID=${session}`,
+				},
+			});
+
+			for (const page of pages) {
 				await wait(1000);
-				const {data: {body: pages}} = await axios.get(`https://www.pixiv.net/ajax/illust/${work.illustId}/pages`, {
+				const {data: imageStream} = await axios.get(page.urls.original, {
+					responseType: 'stream',
 					headers: {
-						Cookie: `PHPSESSID=${session}`,
+						Referer: 'https://www.pixiv.net/',
 					},
 				});
 
-				for (const page of pages) {
-					await wait(1000);
-					const {data: imageStream} = await axios.get(page.urls.original, {
-						responseType: 'stream',
-						headers: {
-							Referer: 'https://www.pixiv.net/',
-						},
-					});
-
-					const passStream = new PassThrough();
-					const result = s3.upload({
-						Bucket: 'hakataarchive',
-						Key: `pixiv/${path.posix.basename(page.urls.original)}`,
-						Body: passStream,
-					});
-
-					imageStream.pipe(passStream);
-
-					await result.promise();
-				}
-
-				updates.push({
-					PutRequest: {
-						Item: work,
-					},
+				const passStream = new PassThrough();
+				const result = s3.upload({
+					Bucket: 'hakataarchive',
+					Key: `pixiv/${path.posix.basename(page.urls.original)}`,
+					Body: passStream,
 				});
+
+				imageStream.pipe(passStream);
+
+				await result.promise();
+			}
+
+			updates.push({
+				PutRequest: {
+					Item: work,
+				},
+			});
+
+			if (updates.length === 25) {
+				console.log('Flushing out changes to DynamoDB...');
+
+				await db.batchWrite({
+					RequestItems: {
+						'hakataarchive-entries-pixiv': updates,
+					},
+				}).promise();
+
+				// empty array
+				updates.splice(0, updates.length);
 			}
 		}
 
-		if (updates.length >= 1) {
+		if (updates.length > 0) {
+			console.log('Flushing out changes to DynamoDB...');
+
 			await db.batchWrite({
 				RequestItems: {
 					'hakataarchive-entries-pixiv': updates,

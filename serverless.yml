@@ -30,6 +30,7 @@ provider:
         - dynamodb:*
         - s3:*
       Resource: '*'
+  timeout: 900
 
 functions:
   crawlPixiv:
@@ -38,7 +39,6 @@ functions:
       - http:
           method: post
           path: crawl-pixiv
-    timeout: 300
   postSession:
     handler: handler.postSession
     events:
