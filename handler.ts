@@ -15,24 +15,6 @@ const PER_PAGE = 48;
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
-export const ping: APIGatewayProxyHandler = () => {
-	console.log('ping');
-
-	return {
-		statusCode: 200,
-		body: 'ping',
-	};
-};
-
-export const pong: APIGatewayProxyHandler = () => {
-	console.log('pong');
-
-	return {
-		statusCode: 200,
-		body: 'pong',
-	};
-};
-
 export const crawlPixiv: APIGatewayProxyHandler = async () => {
 	const sessionData = await db.get({
 		TableName: 'hakataarchive-sessions',

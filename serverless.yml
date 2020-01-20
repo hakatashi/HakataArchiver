@@ -38,21 +38,11 @@ provider:
     - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 
 functions:
-  ping:
-    handler: handler.ping
-    events:
-      - schedule:
-          rate: rate(1 minute)
-          enabled: ${self:custom.productionOnly.${self:provider.stage}}
-  pong:
-    handler: handler.pong
-    events:
-      - schedule: rate(1 minute)
   crawlPixiv:
     handler: handler.crawlPixiv
     events:
       - schedule:
-          rate: rate(15 minutes)
+          rate: cron(0/15 * * * * *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
   postSession:
