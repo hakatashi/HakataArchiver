@@ -44,7 +44,7 @@ functions:
       - schedule:
           rate: cron(0/15 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
-    timeout: 300
+    timeout: 900
   postSession:
     handler: handler.postSession
     events:
