@@ -25,7 +25,8 @@ export const crawlPixiv = async (event, context) => {
 	const {session} = sessionData.Item;
 
 	for (const visibility of ['show', 'hide']) {
-		let offset = 2400;
+		let initialOffset = 2400;
+		let offset = initialOffset;
 
 		const newWorks = [];
 		while (true) {
@@ -70,6 +71,12 @@ export const crawlPixiv = async (event, context) => {
 			}
 
 			if (existingEntries.size > 0) {
+				if (newWorks.length === 0 && initialOffset > 0) {
+					initialOffset -= 480;
+					offset = initialOffset;
+					continue;
+				}
+
 				break;
 			}
 
