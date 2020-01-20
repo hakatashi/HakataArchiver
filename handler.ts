@@ -15,16 +15,7 @@ const PER_PAGE = 48;
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
-export const crawlPixiv: APIGatewayProxyHandler = async (event) => {
-	const body = JSON.parse(event.body);
-
-	if (typeof body.apikey !== 'string' || body.apikey !== process.env.HAKATASHI_API_KEY) {
-		return {
-			statusCode: 403,
-			body: 'apikey is missing or wrong',
-		};
-	}
-
+export const crawlPixiv: APIGatewayProxyHandler = async () => {
 	const sessionData = await db.get({
 		TableName: 'hakataarchive-sessions',
 		Key: {
@@ -34,7 +25,7 @@ export const crawlPixiv: APIGatewayProxyHandler = async (event) => {
 	const {session} = sessionData.Item;
 
 	for (const visibility of ['show', 'hide']) {
-		let {offset} = body;
+		let offset = 2400;
 
 		const newWorks = [];
 		while (true) {

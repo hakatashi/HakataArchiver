@@ -8,7 +8,10 @@ custom:
     includeModules: true
   profiles:
     dev: serverless
-    prod: null
+    production: null
+  productionOnly:
+    dev: false
+    production: true
 
 plugins:
   - serverless-webpack
@@ -31,15 +34,15 @@ provider:
         - dynamodb:*
         - s3:*
       Resource: '*'
-  timeout: 900
 
 functions:
   crawlPixiv:
     handler: handler.crawlPixiv
     events:
-      - http:
-          method: post
-          path: crawl-pixiv
+      - schedule:
+          rate: rate(15 minutes)
+          enabled: ${self:custom.productionOnly.${self:provider.stage}}
+    timeout: 900
   postSession:
     handler: handler.postSession
     events:
