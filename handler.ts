@@ -24,7 +24,7 @@ export const ping: APIGatewayProxyHandler = () => {
 	};
 };
 
-export const oing: APIGatewayProxyHandler = () => {
+export const pong: APIGatewayProxyHandler = () => {
 	console.log('pong');
 
 	return {
