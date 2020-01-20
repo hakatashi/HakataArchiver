@@ -34,6 +34,8 @@ provider:
         - dynamodb:*
         - s3:*
       Resource: '*'
+  iamManagedPolicies:
+    - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 
 functions:
   crawlPixiv:
