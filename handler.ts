@@ -15,7 +15,7 @@ const PER_PAGE = 48;
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
-export const crawlPixiv: APIGatewayProxyHandler = async () => {
+export const crawlPixiv = async (event, context) => {
 	const sessionData = await db.get({
 		TableName: 'hakataarchive-sessions',
 		Key: {
@@ -80,8 +80,13 @@ export const crawlPixiv: APIGatewayProxyHandler = async () => {
 		newWorks.reverse();
 		console.log(`Fetched ${newWorks.length} new illusts`);
 
-		const updates = [];
 		for (const work of newWorks) {
+			const remainingTime = context.getRemainingTimeInMillis();
+			if (remainingTime <= 60 * 1000) {
+				console.log(`Remaining time (${remainingTime}ms) is too short. Giving up...`);
+				break;
+			}
+
 			console.log(`Archiving illust data ${work.illustId}...`);
 
 			await wait(1000);
@@ -112,41 +117,14 @@ export const crawlPixiv: APIGatewayProxyHandler = async () => {
 				await result.promise();
 			}
 
-			updates.push({
-				PutRequest: {
-					Item: work,
-				},
-			});
-
-			if (updates.length === 25) {
-				console.log('Flushing out changes to DynamoDB...');
-
-				await db.batchWrite({
-					RequestItems: {
-						'hakataarchive-entries-pixiv': updates,
-					},
-				}).promise();
-
-				// empty array
-				updates.splice(0, updates.length);
-			}
-		}
-
-		if (updates.length > 0) {
 			console.log('Flushing out changes to DynamoDB...');
 
-			await db.batchWrite({
-				RequestItems: {
-					'hakataarchive-entries-pixiv': updates,
-				},
+			await db.put({
+				TableName: 'hakataarchive-entries-pixiv',
+				Item: work,
 			}).promise();
 		}
 	}
-
-	return {
-		statusCode: 200,
-		body: 'ok',
-	};
 };
 
 export const postSession: APIGatewayProxyHandler = async (event) => {
