@@ -1,21 +1,27 @@
-/* eslint-disable import/prefer-default-export */
-
-import path from 'path';
+import * as path from 'path';
 import {PassThrough} from 'stream';
 // eslint-disable-next-line no-unused-vars
-import {APIGatewayProxyHandler} from 'aws-lambda';
-import 'source-map-support/register.js';
-import {DynamoDB, S3} from 'aws-sdk';
+import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
-
-const db = new DynamoDB.DocumentClient({convertEmptyValues: true});
-const s3 = new S3();
+import 'source-map-support/register.js';
+import {db, s3} from '../lib/aws';
 
 const PER_PAGE = 48;
-
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
-export const crawlPixiv = async (event, context) => {
+interface BookmarksResponse {
+	data: {
+		error: boolean,
+		message: string,
+		body: {
+			works: {
+				illustId: number,
+			}[],
+		},
+	},
+}
+
+const handler: ScheduledHandler = async (_event, context) => {
 	const sessionData = await db.get({
 		TableName: 'hakataarchive-sessions',
 		Key: {
@@ -31,7 +37,7 @@ export const crawlPixiv = async (event, context) => {
 		const newWorks = [];
 		while (true) {
 			await wait(1000);
-			const {data} = await axios.get('https://www.pixiv.net/ajax/user/1817093/illusts/bookmarks', {
+			const {data}: BookmarksResponse = await axios.get('https://www.pixiv.net/ajax/user/1817093/illusts/bookmarks', {
 				params: {
 					tag: '',
 					offset,
@@ -134,26 +140,4 @@ export const crawlPixiv = async (event, context) => {
 	}
 };
 
-export const postSession: APIGatewayProxyHandler = async (event) => {
-	const body = JSON.parse(event.body);
-
-	if (typeof body.apikey !== 'string' || body.apikey !== process.env.HAKATASHI_API_KEY) {
-		return {
-			statusCode: 403,
-			body: 'apikey is missing or wrong',
-		};
-	}
-
-	await db.put({
-		TableName: 'hakataarchive-sessions',
-		Item: {
-			id: body.id,
-			session: body.session,
-		},
-	}).promise();
-
-	return {
-		statusCode: 200,
-		body: 'ok',
-	};
-};
+export default handler;

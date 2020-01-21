@@ -3,6 +3,8 @@
 	"parser": "@typescript-eslint/parser",
 	"rules": {
 		"no-console": "off",
-		"import/no-unresolved": "off"
+		"import/no-unresolved": "off",
+		"import/no-namespace": "off",
+		"import/extensions": "off"
 	}
 }

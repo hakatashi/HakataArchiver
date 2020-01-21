@@ -39,14 +39,14 @@ provider:
 
 functions:
   crawlPixiv:
-    handler: handler.crawlPixiv
+    handler: crawlers/pixiv.default
     events:
       - schedule:
           rate: cron(0/15 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
   postSession:
-    handler: handler.postSession
+    handler: lib/postSession.default
     events:
       - http:
           method: post
