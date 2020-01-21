@@ -96,7 +96,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		for (const work of newWorks) {
 			const remainingTime = context.getRemainingTimeInMillis();
 			if (remainingTime <= 60 * 1000) {
-				console.log(`Remaining time (${remainingTime}ms) is too short. Giving up...`);
+				console.log(`Remaining time (${remainingTime}ms) is short. Giving up...`);
 				break;
 			}
 
@@ -110,6 +110,11 @@ const handler: ScheduledHandler = async (_event, context) => {
 			});
 
 			for (const page of pages) {
+				if (context.getRemainingTimeInMillis() <= 10 * 1000) {
+					console.log('Remaining time is too short. Stopping immediately.');
+					return;
+				}
+
 				await wait(1000);
 				const {data: imageStream} = await axios.get(page.urls.original, {
 					responseType: 'stream',
