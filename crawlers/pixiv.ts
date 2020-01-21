@@ -55,6 +55,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 
 			const {works} = data.body;
+			console.log(works);
+
 			if (works.length === 0) {
 				break;
 			}
