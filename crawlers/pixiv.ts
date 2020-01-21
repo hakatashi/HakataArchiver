@@ -31,8 +31,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	const {session} = sessionData.Item;
 
 	for (const visibility of ['show', 'hide']) {
-		let initialOffset = visibility === 'show' ? 0 : 480;
-		let offset = initialOffset;
+		let offset = 0;
 
 		const newWorks = [];
 		while (true) {
@@ -78,12 +77,6 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 
 			if (existingEntries.size > 0) {
-				if (newWorks.length === 0 && initialOffset > 0) {
-					initialOffset -= 480;
-					offset = initialOffset;
-					continue;
-				}
-
 				break;
 			}
 
@@ -92,7 +85,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 		// oldest first
 		newWorks.reverse();
-		console.log(`Fetched ${newWorks.length} new illusts`);
+		console.log(`[visibility:${visibility}] Fetched ${newWorks.length} new illusts`);
 
 		for (const work of newWorks) {
 			const remainingTime = context.getRemainingTimeInMillis();
