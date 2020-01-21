@@ -3,14 +3,17 @@ import * as qs from 'querystring';
 import {PassThrough} from 'stream';
 import {DynamoDB, S3} from 'aws-sdk';
 import axios from 'axios';
+import * as dotenv from 'dotenv';
 import {OAuth} from 'oauth';
 import * as scrapeIt from 'scrape-it';
+
+dotenv.config({path: `${__dirname}/.env`});
 
 const keys = {
 	consumerKey: process.env.TWITTER_CONSUMER_KEY,
 	consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
 	accessToken: process.env.TWITTER_ACCESS_TOKEN,
-	accessTokenSecret: process.env.TWITTERACCESS_TOKEN_SECRET,
+	accessTokenSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 };
 
 const oauth = new OAuth(
@@ -52,7 +55,7 @@ const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time
 const crawledTweets = new Set();
 
 (async () => {
-	let page = 1;
+	let page = 7;
 	const updates: DynamoDB.DocumentClient.WriteRequests = [];
 
 	while (true) {
@@ -89,7 +92,11 @@ const crawledTweets = new Set();
 			console.log(`Retrieving tweet data (id = ${id})`);
 
 			await wait(1000);
-			const tweetData = await api('statuses/show', {id});
+			const tweetData = await api('statuses/show', {id}).catch(() => null);
+			if (tweetData === null) {
+				console.log('Not found. Skipping...');
+				continue;
+			}
 
 			const targetTweets = [tweetData];
 
@@ -102,7 +109,10 @@ const crawledTweets = new Set();
 				await wait(1000);
 				currentTweet = await api('statuses/show', {
 					id: currentTweet.in_reply_to_status_id_str,
-				});
+				}).catch(() => null);
+				if (currentTweet === null) {
+					break;
+				}
 				targetTweets.push(currentTweet);
 			}
 
