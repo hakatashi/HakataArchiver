@@ -31,7 +31,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	const {session} = sessionData.Item;
 
 	for (const visibility of ['show', 'hide']) {
-		let initialOffset = 2400;
+		let initialOffset = visibility === 'show' ? 0 : 480;
 		let offset = initialOffset;
 
 		const newWorks = [];
@@ -55,7 +55,6 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 
 			const {works} = data.body;
-			console.log(data);
 
 			if (works.length === 0) {
 				break;
