@@ -50,23 +50,25 @@ const handler: ScheduledHandler = async (_event, context) => {
 		);
 
 		const newTweets = [];
-		let maxId = 1_000_000_000_000_000_000_000n;
+		let maxId: BigInt = null;
 
-		for (const _i of Array(10).keys()) {
+		for (const i of Array(10).keys()) {
 			const tweets = await api('favorites/list', {
 				screen_name: screenName,
 				count: 200,
 				include_entities: true,
-				max_id: maxId.toString(),
+				...(maxId === null ? {} : {max_id: maxId.toString()}),
 			});
 
-			console.log(`[twitter:${screenName}] API response with ${tweets.length} tweets`);
+			console.log(`[twitter:${screenName}:page${i}] API response with ${tweets.length} tweets`);
 			if (tweets.length === 0) {
 				break;
 			}
 
 			for (const tweetChunk of chunk(tweets, 100)) {
 				const tweetIds = tweetChunk.map((tweet) => tweet.id_str);
+
+				await wait(3000);
 				const existingEntriesResponse = await db.batchGet({
 					RequestItems: {
 						'hakataarchive-entries-twitter': {
@@ -75,7 +77,6 @@ const handler: ScheduledHandler = async (_event, context) => {
 					},
 				}).promise();
 				const existingEntries = new Set(existingEntriesResponse.Responses['hakataarchive-entries-twitter'].map((entry) => entry.id_str));
-				console.log(`[twitter:${screenName}] Found ${existingEntries.size} existing entries`);
 
 				for (const tweet of tweetChunk) {
 					if (!existingEntries.has(tweet.id_str)) {
