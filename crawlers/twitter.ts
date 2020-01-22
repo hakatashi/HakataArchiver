@@ -60,6 +60,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 				max_id: maxId.toString(),
 			});
 
+			console.log(`[twitter:${screenName}] API response with ${tweets.length} tweets`);
 			if (tweets.length === 0) {
 				break;
 			}
@@ -74,6 +75,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 					},
 				}).promise();
 				const existingEntries = new Set(existingEntriesResponse.Responses['hakataarchive-entries-twitter'].map((entry) => entry.id_str));
+				console.log(`[twitter:${screenName}] Found ${existingEntries.size} existing entries`);
 
 				for (const tweet of tweetChunk) {
 					if (!existingEntries.has(tweet.id_str)) {
