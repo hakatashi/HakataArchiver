@@ -55,12 +55,12 @@ const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time
 const crawledTweets = new Set();
 
 (async () => {
-	let page = 7;
+	let page = 1;
 	const updates: DynamoDB.DocumentClient.WriteRequests = [];
 
 	while (true) {
-		await wait(1000);
-		const {data} = await axios.get(`https://favolog.org/hakatashi/${page}`, {
+		await wait(500);
+		const {data} = await axios.get(`https://favolog.org/hakatashi_A/${page}`, {
 			headers: {
 				Cookie: `_session_id=${process.env.SESSION_ID}`,
 			},
@@ -91,7 +91,7 @@ const crawledTweets = new Set();
 
 			console.log(`Retrieving tweet data (id = ${id})`);
 
-			await wait(1000);
+			await wait(500);
 			const tweetData = await api('statuses/show', {id}).catch(() => null);
 			if (tweetData === null) {
 				console.log('Not found. Skipping...');
@@ -106,7 +106,7 @@ const crawledTweets = new Set();
 					break;
 				}
 
-				await wait(1000);
+				await wait(500);
 				currentTweet = await api('statuses/show', {
 					id: currentTweet.in_reply_to_status_id_str,
 				}).catch(() => null);
@@ -121,9 +121,12 @@ const crawledTweets = new Set();
 			for (const targetTweet of targetTweets) {
 				for (const medium of ((targetTweet.extended_entities && targetTweet.extended_entities.media) || [])) {
 					const filename = path.posix.basename(medium.media_url_https);
+					if (filename === 'BIVruwRCYAAxWRr.jpg') {
+						continue;
+					}
 					console.log(`Saving ${filename}...`);
 
-					await wait(1000);
+					await wait(500);
 					const {data: imageStream} = await axios.get(medium.media_url_https, {
 						params: {
 							name: 'orig',

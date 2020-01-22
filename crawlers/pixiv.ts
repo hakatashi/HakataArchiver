@@ -129,8 +129,6 @@ const handler: ScheduledHandler = async (_event, context) => {
 				await result.promise();
 			}
 
-			console.log('Flushing out changes to DynamoDB...');
-
 			await db.put({
 				TableName: 'hakataarchive-entries-pixiv',
 				Item: work,

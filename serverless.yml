@@ -38,11 +38,18 @@ provider:
     - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 
 functions:
+  crawlTwitter:
+    handler: crawlers/twitter.default
+    events:
+      - schedule:
+          rate: cron(0/15 * * * ? *)
+          enabled: ${self:custom.productionOnly.${self:provider.stage}}
+    timeout: 900
   crawlPixiv:
     handler: crawlers/pixiv.default
     events:
       - schedule:
-          rate: cron(0/15 * * * ? *)
+          rate: cron(17 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
   postSession:
