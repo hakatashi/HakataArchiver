@@ -104,7 +104,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 					break;
 				}
 
-				await wait(1000);
+				await wait(200);
 				currentTweet = await api('statuses/show', {
 					id: currentTweet.in_reply_to_status_id_str,
 				}).catch(() => null);
@@ -123,7 +123,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 					const filename = path.posix.basename(medium.media_url_https);
 					console.log(`Saving ${filename}...`);
 
-					await wait(1000);
+					await wait(200);
 					const {data: imageStream} = await axios.get(medium.media_url_https, {
 						params: {
 							name: 'orig',
