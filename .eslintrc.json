@@ -3,6 +3,7 @@
 	"parser": "@typescript-eslint/parser",
 	"rules": {
 		"no-console": "off",
+		"no-undef-init": "off",
 		"import/no-unresolved": "off",
 		"import/no-namespace": "off",
 		"import/extensions": "off"
