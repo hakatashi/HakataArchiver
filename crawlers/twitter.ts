@@ -4,9 +4,9 @@ import * as path from 'path';
 import * as qs from 'querystring';
 import {PassThrough} from 'stream';
 // eslint-disable-next-line no-unused-vars
+import {inspect} from 'util';
 import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
-import chunk from 'lodash.chunk';
 import {OAuth} from 'oauth';
 import 'source-map-support/register.js';
 import {db, s3} from '../lib/aws';
@@ -14,6 +14,29 @@ import {db, s3} from '../lib/aws';
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
 const handler: ScheduledHandler = async (_event, context) => {
+	// Retrieve all existing ids of database
+	let lastKey = null;
+	const existingIds = new Set();
+	while (lastKey !== undefined) {
+		await wait(2000);
+		const existingEntries = await db.scan({
+			TableName: 'hakataarchive-entries-twitter',
+			ProjectionExpression: 'id_str',
+			ReturnConsumedCapacity: 'INDEXES',
+			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
+		}).promise();
+		console.log(`Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
+		console.log(`Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
+
+		lastKey = existingEntries.LastEvaluatedKey;
+
+		for (const item of existingEntries.Items) {
+			existingIds.add(item.id_str);
+		}
+	}
+
+	console.log(`Retrieved ${existingIds.size} ids in total`);
+
 	for (const screenName of ['hakatashi', 'hakatashi_A', 'hakatashi_B']) {
 		const {Item: keys} = await db.get({
 			TableName: 'hakataarchive-sessions',
@@ -65,25 +88,11 @@ const handler: ScheduledHandler = async (_event, context) => {
 				break;
 			}
 
-			for (const tweetChunk of chunk(tweets, 100)) {
-				const tweetIds = tweetChunk.map((tweet) => tweet.id_str);
-
-				await wait(3000);
-				const existingEntriesResponse = await db.batchGet({
-					RequestItems: {
-						'hakataarchive-entries-twitter': {
-							Keys: tweetIds.map((id) => ({id_str: id})),
-						},
-					},
-				}).promise();
-				const existingEntries = new Set(existingEntriesResponse.Responses['hakataarchive-entries-twitter'].map((entry) => entry.id_str));
-
-				for (const tweet of tweetChunk) {
-					if (!existingEntries.has(tweet.id_str)) {
-						newTweets.push(tweet);
-					}
-					maxId = BigInt(tweet.id_str) - 1n;
+			for (const tweet of tweets) {
+				if (!existingIds.has(tweet.id_str)) {
+					newTweets.push(tweet);
 				}
+				maxId = BigInt(tweet.id_str) - 1n;
 			}
 		}
 
