@@ -18,7 +18,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	let lastKey = null;
 	const existingIds = new Set();
 	while (lastKey !== undefined) {
-		await wait(2000);
+		await wait(5000);
 		const existingEntries = await db.scan({
 			TableName: 'hakataarchive-entries-twitter',
 			ProjectionExpression: 'id_str',
@@ -36,6 +36,13 @@ const handler: ScheduledHandler = async (_event, context) => {
 	}
 
 	console.log(`Retrieved ${existingIds.size} ids in total`);
+
+	await s3.upload({
+		Bucket: 'hakataarchive',
+		Key: 'index/twitter.json',
+		Body: JSON.stringify(Array.from(existingIds)),
+	}).promise();
+	console.log('Uploaded item indices into S3');
 
 	for (const screenName of ['hakatashi', 'hakatashi_A', 'hakatashi_B']) {
 		const {Item: keys} = await db.get({
