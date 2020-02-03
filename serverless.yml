@@ -58,3 +58,9 @@ functions:
       - http:
           method: post
           path: post-session
+  randomTwitter:
+    handler: lib/random.twitter
+    events:
+      - http:
+          method: get
+          path: random/twitter

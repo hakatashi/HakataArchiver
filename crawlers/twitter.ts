@@ -3,8 +3,8 @@
 import * as path from 'path';
 import * as qs from 'querystring';
 import {PassThrough} from 'stream';
-// eslint-disable-next-line no-unused-vars
 import {inspect} from 'util';
+// eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import {OAuth} from 'oauth';
