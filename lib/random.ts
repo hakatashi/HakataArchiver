@@ -7,17 +7,17 @@ import sample from 'lodash/sample';
 import {db, s3} from './aws';
 
 export const twitter: APIGatewayProxyHandler = async (event) => {
-	const {host} = new URL(event.headers.origin);
-	if (!host.match(/^(?:localhost:\d+|archive\.hakatashi\.com)$/)) {
+	const origin = get(event, ['headers', 'origin'], '');
+	if (!origin.match(/^https?:\/\/(?:localhost:\d+|archive\.hakatashi\.com)$/)) {
 		return {
 			statusCode: 403,
 			headers: {
 				'Content-Type': 'application/json',
 				Vary: 'Origin',
-				'Access-Control-Allow-Origin': host,
+				'Access-Control-Allow-Origin': origin,
 			},
 			body: JSON.stringify({
-				message: 'apikey is missing or wrong',
+				message: 'origin not allowed',
 			}),
 		};
 	}
@@ -28,7 +28,7 @@ export const twitter: APIGatewayProxyHandler = async (event) => {
 			headers: {
 				'Content-Type': 'application/json',
 				Vary: 'Origin',
-				'Access-Control-Allow-Origin': host,
+				'Access-Control-Allow-Origin': origin,
 			},
 			body: JSON.stringify({
 				message: 'apikey is missing or wrong',
@@ -62,7 +62,7 @@ export const twitter: APIGatewayProxyHandler = async (event) => {
 		headers: {
 			'Content-Type': 'application/json',
 			Vary: 'Origin',
-			'Access-Control-Allow-Origin': host,
+			'Access-Control-Allow-Origin': origin,
 		},
 		body: JSON.stringify({
 			entry,
