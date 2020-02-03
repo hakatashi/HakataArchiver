@@ -46,7 +46,7 @@ export const twitter: APIGatewayProxyHandler = async (event) => {
 	const {Item: entry} = await db.get({
 		TableName: 'hakataarchive-entries-twitter',
 		Key: {
-			id_str: '746483745276858368',
+			id_str: entryId,
 		},
 	}).promise();
 	const media = get(entry, ['extended_entities', 'media'], []).map((medium) => {
