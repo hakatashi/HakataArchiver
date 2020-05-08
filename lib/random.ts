@@ -1,3 +1,5 @@
+/* global BigInt */
+
 import {basename} from 'path';
 // eslint-disable-next-line no-unused-vars
 import {APIGatewayProxyHandler} from 'aws-lambda';
@@ -5,6 +7,11 @@ import 'source-map-support/register.js';
 import get from 'lodash/get';
 import sample from 'lodash/sample';
 import {db, s3} from './aws';
+
+// eslint-disable-next-line no-extend-native
+BigInt.prototype.toJSON = () => (
+	this.toString()
+);
 
 export const twitter: APIGatewayProxyHandler = async (event) => {
 	const origin = get(event, ['headers', 'origin'], '');
