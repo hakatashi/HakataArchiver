@@ -9,9 +9,9 @@ import sample from 'lodash/sample';
 import {db, s3} from './aws';
 
 // eslint-disable-next-line no-extend-native
-BigInt.prototype.toJSON = () => (
-	this.toString()
-);
+BigInt.prototype.toJSON = function () {
+	return this.toString();
+};
 
 export const twitter: APIGatewayProxyHandler = async (event) => {
 	const origin = get(event, ['headers', 'origin'], '');
