@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "axios": "^0.19.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "lodash.chunk": "^4.2.0",
     "oauth": "^0.9.15",
     "source-map-support": "^0.5.19"
