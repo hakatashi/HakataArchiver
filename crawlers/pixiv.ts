@@ -4,6 +4,7 @@ import {PassThrough} from 'stream';
 // eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
+import get from 'lodash/get';
 import 'source-map-support/register.js';
 import {db, s3} from '../lib/aws';
 
@@ -31,6 +32,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
 	const existingIds = new Set();
+	const publicIds = new Set();
+	const privateIds = new Set();
 	while (lastKey !== undefined) {
 		await wait(5000);
 		const existingEntries = await db.scan({
@@ -42,14 +45,16 @@ const handler: ScheduledHandler = async (_event, context) => {
 		console.log(`[pixiv] Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
 		console.log(`[pixiv] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
 
-		if (lastKey === null) {
-			console.log(`[pixiv] Sampled entry: ${inspect(existingEntries.Items[0])}`);
-		}
-
 		lastKey = existingEntries.LastEvaluatedKey;
 
 		for (const item of existingEntries.Items) {
+			const isPrivate = get(item, ['bookmarkData', 'private'], false);
 			existingIds.add(item.id);
+			if (isPrivate) {
+				privateIds.add(item.id);
+			} else {
+				publicIds.add(item.id);
+			}
 		}
 	}
 
@@ -58,7 +63,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	await s3.upload({
 		Bucket: 'hakataarchive',
 		Key: 'index/pixiv.json',
-		Body: JSON.stringify(Array.from(existingIds)),
+		Body: JSON.stringify({public: Array.from(publicIds), private: Array.from(privateIds)}),
 	}).promise();
 	console.log('[pixiv] Uploaded item indices into S3');
 
@@ -174,7 +179,10 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 			await db.put({
 				TableName: 'hakataarchive-entries-pixiv',
-				Item: work,
+				Item: {
+					...work,
+					illustId: work.id,
+				},
 			}).promise();
 		}
 	}
