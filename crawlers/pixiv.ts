@@ -33,7 +33,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		await wait(5000);
 		const existingEntries = await db.scan({
 			TableName: 'hakataarchive-entries-pixiv',
-			ProjectionExpression: 'id,bookmarkData.private',
+			ProjectionExpression: 'id,bookmarkData',
 			ReturnConsumedCapacity: 'INDEXES',
 			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
 		}).promise();
