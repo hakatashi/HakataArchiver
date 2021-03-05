@@ -39,6 +39,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		const newWorks = [];
 		while (true) {
 			await wait(1000);
+			
 			const {data}: BookmarksResponse = await axios.get('https://www.pixiv.net/ajax/user/1817093/illusts/bookmarks', {
 				params: {
 					tag: '',
@@ -58,6 +59,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 
 			const {works} = data.body;
+
+			console.log(`[pixiv:${visibility}:offset${offset}] API response with ${works.length} tweets`);
 
 			if (works.length === 0) {
 				break;
@@ -89,7 +92,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 		// oldest first
 		newWorks.reverse();
-		console.log(`[visibility:${visibility}] Fetched ${newWorks.length} new illusts`);
+		console.log(`[pixiv:${visibility}:offset${offset}] Fetched ${newWorks.length} new illusts`);
 
 		for (const work of newWorks) {
 			const remainingTime = context.getRemainingTimeInMillis();
