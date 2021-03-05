@@ -114,15 +114,15 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 			console.log(`[pixiv:${visibility}:offset=${offset}] workIds = ${inspect(workIds)}`);
 
-			let stop = false;
+			let stop = true;
 			for (const work of works) {
 				if (!existingIds.has(work.id)) {
 					newWorks.push(work);
-					stop = true;
+					stop = false;
 				}
 			}
 
-			if (stop) {
+			if (offset >= 100 && stop) {
 				break;
 			}
 
