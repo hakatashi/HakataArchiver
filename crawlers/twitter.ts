@@ -25,8 +25,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 			ReturnConsumedCapacity: 'INDEXES',
 			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
 		}).promise();
-		console.log(`Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
-		console.log(`Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
+		console.log(`[twitter] Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
+		console.log(`[twitter] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
 
 		lastKey = existingEntries.LastEvaluatedKey;
 
@@ -35,14 +35,14 @@ const handler: ScheduledHandler = async (_event, context) => {
 		}
 	}
 
-	console.log(`Retrieved ${existingIds.size} ids in total`);
+	console.log(`[twitter] Retrieved ${existingIds.size} ids in total`);
 
 	await s3.upload({
 		Bucket: 'hakataarchive',
 		Key: 'index/twitter.json',
 		Body: JSON.stringify(Array.from(existingIds)),
 	}).promise();
-	console.log('Uploaded item indices into S3');
+	console.log('[twitter] Uploaded item indices into S3');
 
 	for (const screenName of ['hakatashi', 'hakatashi_A', 'hakatashi_B']) {
 		const {Item: keys} = await db.get({

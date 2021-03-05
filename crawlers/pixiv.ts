@@ -1,4 +1,5 @@
 import * as path from 'path';
+import {inspect} from 'util';
 import {PassThrough} from 'stream';
 // eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
@@ -62,7 +63,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 			const {works} = data.body;
 
-			console.log(`[pixiv:${visibility}:offset${offset}] API response with ${works.length} tweets`);
+			console.log(`[pixiv:${visibility}:offset=${offset}] API response with ${works.length} tweets`);
 
 			if (works.length === 0) {
 				break;
@@ -70,10 +71,12 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 			const workIds = works.map((work) => work.id);
 
+			console.log(`[pixiv:${visibility}:offset=${offset}] workIds = ${inspect(workIds)}`);
+
 			const existingEntriesResponse = await db.batchGet({
 				RequestItems: {
 					'hakataarchive-entries-pixiv': {
-						Keys: workIds.map((id) => ({illustId: id})),
+						Keys: workIds.map((id) => ({id})),
 					},
 				},
 			}).promise();
