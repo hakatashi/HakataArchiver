@@ -10,14 +10,16 @@ import {db, s3} from '../lib/aws';
 const PER_PAGE = 48;
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
+interface Work {
+	id: number,
+}
+
 interface BookmarksResponse {
 	data: {
 		error: boolean,
 		message: string,
 		body: {
-			works: {
-				id: number,
-			}[],
+			works: Work[],
 		},
 	},
 }
@@ -73,7 +75,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	for (const visibility of ['show', 'hide']) {
 		let offset = 0;
 
-		const newWorks = [];
+		const newWorks: Work[] = [];
 		while (true) {
 			await wait(1000);
 			
@@ -107,13 +109,15 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 			console.log(`[pixiv:${visibility}:offset=${offset}] workIds = ${inspect(workIds)}`);
 
+			let stop = false;
 			for (const work of works) {
 				if (!existingIds.has(work.id)) {
 					newWorks.push(work);
+					stop = true;
 				}
 			}
 
-			if (newWorks.length > 0) {
+			if (stop) {
 				break;
 			}
 
@@ -122,7 +126,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 		// oldest first
 		newWorks.reverse();
-		console.log(`[pixiv:${visibility}:offset${offset}] Fetched ${newWorks.length} new illusts`);
+		console.log(`[pixiv:${visibility}] Fetched ${newWorks.length} new illusts`);
 
 		for (const work of newWorks) {
 			const remainingTime = context.getRemainingTimeInMillis();
@@ -131,10 +135,10 @@ const handler: ScheduledHandler = async (_event, context) => {
 				break;
 			}
 
-			console.log(`[pixiv] Archiving illust data ${work.illustId}...`);
+			console.log(`[pixiv] Archiving illust data ${work.id}...`);
 
 			await wait(1000);
-			const {data: {body: pages}} = await axios.get(`https://www.pixiv.net/ajax/illust/${work.illustId}/pages`, {
+			const {data: {body: pages}} = await axios.get(`https://www.pixiv.net/ajax/illust/${work.id}/pages`, {
 				headers: {
 					'User-Agent': USER_AGENT,
 					Cookie: `PHPSESSID=${session}`,
