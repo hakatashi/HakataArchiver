@@ -64,3 +64,9 @@ functions:
       - http:
           method: get
           path: random/twitter
+  randomPixiv:
+    handler: lib/random.pixiv
+    events:
+      - http:
+          method: get
+          path: random/pixiv

@@ -2,9 +2,10 @@
 
 import {basename} from 'path';
 // eslint-disable-next-line no-unused-vars
-import {APIGatewayProxyHandler} from 'aws-lambda';
+import type {APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda';
 import 'source-map-support/register.js';
 import get from 'lodash/get';
+import range from 'lodash/range';
 import sample from 'lodash/sample';
 import {db, s3} from './aws';
 
@@ -13,7 +14,7 @@ BigInt.prototype.toJSON = function () {
 	return this.toString();
 };
 
-export const twitter: APIGatewayProxyHandler = async (event) => {
+const verifyRequest = (event: APIGatewayProxyEvent): APIGatewayProxyResult => {
 	const origin = get(event, ['headers', 'origin'], '');
 	if (!origin.match(/^https?:\/\/(?:localhost:\d+|archive\.hakatashi\.com)$/)) {
 		return {
@@ -43,6 +44,16 @@ export const twitter: APIGatewayProxyHandler = async (event) => {
 		};
 	}
 
+	return null;
+};
+
+export const twitter: APIGatewayProxyHandler = async (event) => {
+	const error = verifyRequest(event);
+
+	if (error !== null) {
+		return error;
+	}
+
 	const result = await s3.getObject({
 		Bucket: 'hakataarchive',
 		Key: 'index/twitter.json',
@@ -69,6 +80,8 @@ export const twitter: APIGatewayProxyHandler = async (event) => {
 		};
 	});
 
+	const origin = get(event, ['headers', 'origin'], '');
+
 	return {
 		statusCode: 200,
 		headers: {
@@ -83,4 +96,54 @@ export const twitter: APIGatewayProxyHandler = async (event) => {
 	};
 };
 
-export const pixiv: APIGatewayProxyHandler = () => {};
+export const pixiv: APIGatewayProxyHandler = async (event) => {
+	const error = verifyRequest(event);
+
+	if (error !== null) {
+		return error;
+	}
+
+	const result = await s3.getObject({
+		Bucket: 'hakataarchive',
+		Key: 'index/pixiv.json',
+	}).promise();
+	const entryIds = JSON.parse(result.Body.toString());
+	const entryId = sample(entryIds);
+
+	const {Item: entry} = await db.get({
+		TableName: 'hakataarchive-entries-pixiv',
+		Key: {
+			illustId: entryId,
+		},
+	}).promise();
+
+	const photoItems = await s3.listObjectsV2({
+		Bucket: 'hakataarchive',
+		Prefix: `pixiv/${entryId}_`,
+	}).promise();
+
+	const media = photoItems.Contents.map((item) => {
+		const url = s3.getSignedUrl('getObject', {
+			Bucket: 'hakataarchive',
+			Key: item.Key,
+		});
+		return {
+			src: url,
+		};
+	});
+
+	const origin = get(event, ['headers', 'origin'], '');
+
+	return {
+		statusCode: 200,
+		headers: {
+			'Content-Type': 'application/json',
+			Vary: 'Origin',
+			'Access-Control-Allow-Origin': origin,
+		},
+		body: JSON.stringify({
+			entry,
+			media,
+		}),
+	};
+};
