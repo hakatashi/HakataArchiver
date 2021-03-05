@@ -15,7 +15,7 @@ interface BookmarksResponse {
 		message: string,
 		body: {
 			works: {
-				illustId: number,
+				id: number,
 			}[],
 		},
 	},
@@ -32,6 +32,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 		},
 	}).promise();
 	const {session} = sessionData.Item;
+
+	console.log('[pixiv] Session ID retrieved.');
 
 	for (const visibility of ['show', 'hide']) {
 		let offset = 0;
@@ -66,7 +68,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 				break;
 			}
 
-			const workIds = works.map((work) => work.illustId);
+			const workIds = works.map((work) => work.id);
 
 			const existingEntriesResponse = await db.batchGet({
 				RequestItems: {
@@ -78,7 +80,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			const existingEntries = new Set(existingEntriesResponse.Responses['hakataarchive-entries-pixiv'].map((entry) => entry.illustId));
 
 			for (const work of works) {
-				if (!existingEntries.has(work.illustId)) {
+				if (!existingEntries.has(work.id)) {
 					newWorks.push(work);
 				}
 			}
@@ -97,11 +99,11 @@ const handler: ScheduledHandler = async (_event, context) => {
 		for (const work of newWorks) {
 			const remainingTime = context.getRemainingTimeInMillis();
 			if (remainingTime <= 60 * 1000) {
-				console.log(`Remaining time (${remainingTime}ms) is short. Giving up...`);
+				console.log(`[pixiv] Remaining time (${remainingTime}ms) is short. Giving up...`);
 				break;
 			}
 
-			console.log(`Archiving illust data ${work.illustId}...`);
+			console.log(`[pixiv] Archiving illust data ${work.illustId}...`);
 
 			await wait(1000);
 			const {data: {body: pages}} = await axios.get(`https://www.pixiv.net/ajax/illust/${work.illustId}/pages`, {

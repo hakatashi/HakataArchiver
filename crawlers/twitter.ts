@@ -62,7 +62,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			'HMAC-SHA1',
 		);
 
-		const api = (target: string, params: object) => (
+		const api = (target: string, params: {}) => (
 			new Promise<any>((resolve, reject) => {
 				oauth.get(
 					`https://api.twitter.com/1.1/${target}.json?${qs.stringify(params)}`,
