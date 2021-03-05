@@ -103,12 +103,17 @@ export const pixiv: APIGatewayProxyHandler = async (event) => {
 		return error;
 	}
 
+	let visibility = 'public';
+	if (event.queryStringParameters.visibility === 'private') {
+		visibility = 'private';
+	}
+
 	const result = await s3.getObject({
 		Bucket: 'hakataarchive',
 		Key: 'index/pixiv.json',
 	}).promise();
 	const entryIds = JSON.parse(result.Body.toString());
-	const entryId = sample(entryIds);
+	const entryId = sample(entryIds[visibility]);
 
 	const {Item: entry} = await db.get({
 		TableName: 'hakataarchive-entries-pixiv',
