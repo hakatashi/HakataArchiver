@@ -21,6 +21,9 @@ interface BookmarksResponse {
 	},
 }
 
+// :innocent:
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
+
 const handler: ScheduledHandler = async (_event, context) => {
 	const sessionData = await db.get({
 		TableName: 'hakataarchive-sessions',
@@ -44,6 +47,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 					rest: visibility,
 				},
 				headers: {
+					'User-Agent': USER_AGENT,
 					Cookie: `PHPSESSID=${session}`,
 				},
 			});
@@ -99,6 +103,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			await wait(1000);
 			const {data: {body: pages}} = await axios.get(`https://www.pixiv.net/ajax/illust/${work.illustId}/pages`, {
 				headers: {
+					'User-Agent': USER_AGENT,
 					Cookie: `PHPSESSID=${session}`,
 				},
 			});
@@ -113,6 +118,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 				const {data: imageStream} = await axios.get(page.urls.original, {
 					responseType: 'stream',
 					headers: {
+						'User-Agent': USER_AGENT,
 						Referer: 'https://www.pixiv.net/',
 					},
 				});
