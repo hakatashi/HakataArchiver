@@ -26,6 +26,40 @@ interface BookmarksResponse {
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
 
 const handler: ScheduledHandler = async (_event, context) => {
+	// Retrieve all existing ids of database
+	let lastKey = null;
+	const existingIds = new Set();
+	while (lastKey !== undefined) {
+		await wait(5000);
+		const existingEntries = await db.scan({
+			TableName: 'hakataarchive-entries-pixiv',
+			ProjectionExpression: 'id,bookmarkData.private',
+			ReturnConsumedCapacity: 'INDEXES',
+			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
+		}).promise();
+		console.log(`[pixiv] Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
+		console.log(`[pixiv] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
+
+		if (lastKey === null) {
+			console.log(`[pixiv] Sampled entry: ${inspect(existingEntries.Items[0])}`);
+		}
+
+		lastKey = existingEntries.LastEvaluatedKey;
+
+		for (const item of existingEntries.Items) {
+			existingIds.add(item.id);
+		}
+	}
+
+	console.log(`[pixiv] Retrieved ${existingIds.size} ids in total`);
+
+	await s3.upload({
+		Bucket: 'hakataarchive',
+		Key: 'index/pixiv.json',
+		Body: JSON.stringify(Array.from(existingIds)),
+	}).promise();
+	console.log('[pixiv] Uploaded item indices into S3');
+
 	const sessionData = await db.get({
 		TableName: 'hakataarchive-sessions',
 		Key: {
@@ -73,22 +107,13 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 			console.log(`[pixiv:${visibility}:offset=${offset}] workIds = ${inspect(workIds)}`);
 
-			const existingEntriesResponse = await db.batchGet({
-				RequestItems: {
-					'hakataarchive-entries-pixiv': {
-						Keys: workIds.map((id) => ({id})),
-					},
-				},
-			}).promise();
-			const existingEntries = new Set(existingEntriesResponse.Responses['hakataarchive-entries-pixiv'].map((entry) => entry.illustId));
-
 			for (const work of works) {
-				if (!existingEntries.has(work.id)) {
+				if (!existingIds.has(work.id)) {
 					newWorks.push(work);
 				}
 			}
 
-			if (existingEntries.size > 0) {
+			if (newWorks.length > 0) {
 				break;
 			}
 
