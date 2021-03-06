@@ -13,6 +13,7 @@ const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time
 
 interface Work {
 	id: number,
+	isBookmarkable: boolean,
 }
 
 interface BookmarksResponse {
@@ -140,6 +141,11 @@ const handler: ScheduledHandler = async (_event, context) => {
 				break;
 			}
 
+			if (!work.isBookmarkable) {
+				console.log(`[pixiv] ${work.id} is already deleted ;( Continuing...`);
+				continue;
+			}
+
 			console.log(`[pixiv] Archiving illust data ${work.id}...`);
 
 			await wait(1000);
@@ -148,6 +154,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 					'User-Agent': USER_AGENT,
 					Cookie: `PHPSESSID=${session}`,
 				},
+
 			});
 
 			for (const page of pages) {
