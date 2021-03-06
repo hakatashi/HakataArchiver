@@ -104,7 +104,7 @@ export const pixiv: APIGatewayProxyHandler = async (event) => {
 	}
 
 	let visibility = 'public';
-	if (event.queryStringParameters.visibility === 'private') {
+	if (get(event, ['queryStringParameters', 'visibility']) === 'private') {
 		visibility = 'private';
 	}
 
