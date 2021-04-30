@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
+    "cheerio": "^0.20.0",
     "lodash": "^4.17.21",
     "lodash.chunk": "^4.2.0",
     "oauth": "^0.9.15",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@hakatashi/eslint-config": "^1.15.0",
     "@types/aws-lambda": "^8.10.76",
+    "@types/cheerio": "^0.22.28",
     "@types/lodash": "^4.14.168",
     "@types/node": "^15.0.1",
     "@types/oauth": "^0.9.1",

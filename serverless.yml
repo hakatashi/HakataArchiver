@@ -52,6 +52,13 @@ functions:
           rate: cron(17 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
+  crawlPoipiku:
+    handler: crawlers/poipiku.default
+    events:
+      - schedule:
+          rate: cron(51 * * * ? *)
+          enabled: ${self:custom.productionOnly.${self:provider.stage}}
+    timeout: 900
   postSession:
     handler: lib/postSession.default
     events:

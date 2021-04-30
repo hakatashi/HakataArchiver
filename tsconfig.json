@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["esnext"],
+    "lib": ["esnext", "DOM"],
     "removeComments": true,
     "moduleResolution": "node",
     "noUnusedLocals": true,
