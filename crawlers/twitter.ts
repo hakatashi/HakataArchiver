@@ -18,7 +18,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	let lastKey = null;
 	const existingIds = new Set();
 	while (lastKey !== undefined) {
-		await wait(5000);
+		await wait(1000);
 		const existingEntries = await db.scan({
 			TableName: 'hakataarchive-entries-twitter',
 			ProjectionExpression: 'id_str',
@@ -26,7 +26,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
 		}).promise();
 		console.log(`[twitter] Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
-		console.log(`[twitter] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
+		console.log(`[twitter] Consumed capacity: ${existingEntries.ConsumedCapacity.CapacityUnits}`);
 
 		lastKey = existingEntries.LastEvaluatedKey;
 
@@ -51,6 +51,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 				id: `twitter:${screenName}`,
 			},
 		}).promise();
+
+		console.log(`[twitter:${screenName}] Session information retrieved: ${Object.keys(keys)}`);
 
 		const oauth = new OAuth(
 			'https://api.twitter.com/oauth/request_token',
@@ -100,6 +102,23 @@ const handler: ScheduledHandler = async (_event, context) => {
 					newTweets.push(tweet);
 				}
 				maxId = BigInt(tweet.id_str) - 1n;
+			}
+		}
+
+		'🤔';
+		if (screenName === 'hakatashi_A') {
+			const {statuses: tweets} = await api('search/tweets', {
+				q: 'from:nrsk_rkgk filter:images exclude:retweets',
+				result_type: 'recent',
+				count: 100,
+				include_entities: true,
+			});
+
+			console.log(`[twitter:${screenName}] Additional search found ${tweets.length} tweets`);
+			for (const tweet of tweets) {
+				if (!existingIds.has(tweet.id_str)) {
+					newTweets.push(tweet);
+				}
 			}
 		}
 
