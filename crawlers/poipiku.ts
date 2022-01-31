@@ -9,7 +9,7 @@ import cheerio from 'cheerio';
 import get from 'lodash/get';
 import last from 'lodash/last';
 import 'source-map-support/register.js';
-import {db, s3, incrementCounter} from '../lib/aws';
+import {db, s3, incrementCounter, uploadImage} from '../lib/aws';
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
@@ -185,25 +185,15 @@ const handler: ScheduledHandler = async (_event, context) => {
 			const fetchUrl = imageUrl.replace(/_640\.jpg$/, '');
 
 			await wait(1000);
-			const {data: imageStream} = await axios.get(fetchUrl, {
-				responseType: 'stream',
+			const {data: imageData} = await axios.get<Buffer>(fetchUrl, {
+				responseType: 'arraybuffer',
 				headers: {
 					'User-Agent': USER_AGENT,
 					Referer: 'https://www.poipiku.net/',
 				},
 			});
 
-			const passStream = new PassThrough();
-			const result = s3.upload({
-				Bucket: 'hakataarchive',
-				Key: `poipiku/${path.posix.basename(fetchUrl)}`,
-				Body: passStream,
-			});
-
-			imageStream.pipe(passStream);
-
-			await result.promise();
-
+			await uploadImage(imageData, `poipiku/${path.posix.basename(fetchUrl)}`);
 			await incrementCounter('PoipikuImageSaved');
 		}
 

@@ -9,7 +9,7 @@ import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import {OAuth} from 'oauth';
 import 'source-map-support/register.js';
-import {db, incrementCounter, s3} from '../lib/aws';
+import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
@@ -162,24 +162,14 @@ const handler: ScheduledHandler = async (_event, context) => {
 					console.log(`Saving ${filename}...`);
 
 					await wait(200);
-					const {data: imageStream} = await axios.get(medium.media_url_https, {
+					const {data: imageData} = await axios.get<Buffer>(medium.media_url_https, {
 						params: {
 							name: 'orig',
 						},
-						responseType: 'stream',
+						responseType: 'arraybuffer',
 					});
 
-					const passStream = new PassThrough();
-					const result = s3.upload({
-						Bucket: 'hakataarchive',
-						Key: `twitter/${filename}`,
-						Body: passStream,
-					});
-
-					imageStream.pipe(passStream);
-
-					await result.promise();
-
+					await uploadImage(imageData, `twitter/${filename}`);
 					await incrementCounter('TwitterImageSaved');
 				}
 

@@ -6,7 +6,7 @@ import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import get from 'lodash/get';
 import 'source-map-support/register.js';
-import {db, incrementCounter, s3} from '../lib/aws';
+import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 
 const PER_PAGE = 48;
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
@@ -164,25 +164,15 @@ const handler: ScheduledHandler = async (_event, context) => {
 				}
 
 				await wait(1000);
-				const {data: imageStream} = await axios.get(page.urls.original, {
-					responseType: 'stream',
+				const {data: imageData} = await axios.get<Buffer>(page.urls.original, {
+					responseType: 'arraybuffer',
 					headers: {
 						'User-Agent': USER_AGENT,
 						Referer: 'https://www.pixiv.net/',
 					},
 				});
 
-				const passStream = new PassThrough();
-				const result = s3.upload({
-					Bucket: 'hakataarchive',
-					Key: `pixiv/${path.posix.basename(page.urls.original)}`,
-					Body: passStream,
-				});
-
-				imageStream.pipe(passStream);
-
-				await result.promise();
-
+				await uploadImage(imageData, `pixiv/${path.posix.basename(page.urls.original)}`);
 				await incrementCounter('PixivImageSaved');
 			}
 
