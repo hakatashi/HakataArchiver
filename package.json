@@ -7,12 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "axios": "^0.21.1",
+    "axios": "^0.24.0",
     "cheerio": "^0.22.0",
     "lodash": "^4.17.21",
     "lodash.chunk": "^4.2.0",
     "oauth": "^0.9.15",
-    "source-map-support": "^0.5.19"
+    "source-map-support": "^0.5.21"
   },
   "devDependencies": {
     "@hakatashi/eslint-config": "^1.15.0",
