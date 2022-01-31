@@ -1,12 +1,12 @@
 import * as path from 'path';
-import {inspect} from 'util';
 import {PassThrough} from 'stream';
+import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import get from 'lodash/get';
 import 'source-map-support/register.js';
-import {db, s3} from '../lib/aws';
+import {db, incrementCounter, s3} from '../lib/aws';
 
 const PER_PAGE = 48;
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
@@ -84,7 +84,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		const newWorks: Work[] = [];
 		while (true) {
 			await wait(1000);
-			
+
 			const {data}: BookmarksResponse = await axios.get('https://www.pixiv.net/ajax/user/1817093/illusts/bookmarks', {
 				params: {
 					tag: '',
@@ -182,6 +182,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 				imageStream.pipe(passStream);
 
 				await result.promise();
+
+				await incrementCounter('PixivImageSaved');
 			}
 
 			await db.put({

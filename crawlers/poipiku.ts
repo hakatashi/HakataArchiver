@@ -1,17 +1,16 @@
 import path from 'path';
-import {inspect} from 'util';
 import qs from 'querystring';
 import {PassThrough} from 'stream';
+import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
+import cheerio from 'cheerio';
 import get from 'lodash/get';
 import last from 'lodash/last';
-import cheerio from 'cheerio';
 import 'source-map-support/register.js';
-import {db, s3} from '../lib/aws';
+import {db, s3, incrementCounter} from '../lib/aws';
 
-const PER_PAGE = 48;
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
 interface Work {
@@ -77,7 +76,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	}).promise();
 	const {session} = sessionData.Item;
 
-	console.log('[poipiku] Session ID retrieved.');
+	console.log(`[poipiku] Session ID retrieved (session = ${session}).`);
 
 	let page = 0;
 
@@ -93,6 +92,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 				'User-Agent': USER_AGENT,
 				Cookie: `POIPIKU_LK=${session}`,
 			},
+			validateStatus: null,
 		});
 
 		const $ = cheerio.load(data);
@@ -104,7 +104,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		$items.each(function () {
 			const id = last($(this).attr('id').split('_'));
 			const userId = $(this).find('.IllustItemUserThumb').attr('href').split('/')[1];
-			const userName = $(this).find('.IllustItemUserName').text()
+			const userName = $(this).find('.IllustItemUserName').text();
 			const userIcon = $(this).find('.IllustItemUserThumb').attr('style').replace(/^.+'(.+?)'.+$/, '$1');
 			const description = $(this).find('.IllustItemDesc').text();
 			const thumbImageUrl = $(this).find('.IllustItemThumbImg').attr('src');
@@ -174,7 +174,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			work.imageUrls.push(
 				new URL($(this).attr('src'), 'https://poipiku.com/MyHomePcV.jsp').toString(),
 			);
-		})
+		});
 
 		for (const imageUrl of work.imageUrls) {
 			if (context.getRemainingTimeInMillis() <= 10 * 1000) {
@@ -203,6 +203,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 			imageStream.pipe(passStream);
 
 			await result.promise();
+
+			await incrementCounter('PoipikuImageSaved');
 		}
 
 		await db.put({

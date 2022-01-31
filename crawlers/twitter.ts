@@ -9,7 +9,7 @@ import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import {OAuth} from 'oauth';
 import 'source-map-support/register.js';
-import {db, s3} from '../lib/aws';
+import {db, incrementCounter, s3} from '../lib/aws';
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
@@ -179,6 +179,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 					imageStream.pipe(passStream);
 
 					await result.promise();
+
+					await incrementCounter('TwitterImageSaved');
 				}
 
 				crawledTweets.add(targetTweet.id_str);
