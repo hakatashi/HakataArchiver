@@ -40,7 +40,7 @@ import {s3} from '../lib/aws';
 				MetadataDirective: 'REPLACE',
 				Metadata: {
 					width: dimensions.width.toString(),
-					hieght: dimensions.height.toString(),
+					height: dimensions.height.toString(),
 				},
 			}).promise();
 		} catch (error) {
