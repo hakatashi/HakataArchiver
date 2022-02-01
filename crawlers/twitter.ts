@@ -2,7 +2,6 @@
 
 import * as path from 'path';
 import * as qs from 'querystring';
-import {PassThrough} from 'stream';
 import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
