@@ -5,7 +5,6 @@ import {basename} from 'path';
 import type {APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda';
 import 'source-map-support/register.js';
 import get from 'lodash/get';
-import range from 'lodash/range';
 import sample from 'lodash/sample';
 import {db, s3} from './aws';
 
@@ -127,13 +126,25 @@ export const pixiv: APIGatewayProxyHandler = async (event) => {
 		Prefix: `pixiv/${entryId}_`,
 	}).promise();
 
-	const media = photoItems.Contents.map((item) => {
+	const sortedContents = await Promise.all(photoItems.Contents.sort((a, b) => (
+		parseInt(a.Key.split('_p')[1]) - parseInt(b.Key.split('_p')[1])
+	)).map(async (content) => {
+		const head = await s3.headObject({
+			Bucket: 'hakataarchive',
+			Key: content.Key,
+		}).promise();
+		return {...head, Key: content.Key};
+	}));
+
+	const media = sortedContents.map((item) => {
 		const url = s3.getSignedUrl('getObject', {
 			Bucket: 'hakataarchive',
 			Key: item.Key,
 		});
 		return {
 			src: url,
+			w: parseInt(item.Metadata.width),
+			h: parseInt(item.Metadata.height),
 		};
 	});
 
