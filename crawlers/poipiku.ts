@@ -135,7 +135,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 		}
 
-		if (page >= 3 && stop) {
+		if (page >= 9) {
 			break;
 		}
 
@@ -165,8 +165,12 @@ const handler: ScheduledHandler = async (_event, context) => {
 				'User-Agent': USER_AGENT,
 				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
 				Cookie: `POIPIKU_LK=${session}`,
+				Referer: `https://poipiku.com/${work.userId}/${work.id}.html`,
 			},
-			data: qs.stringify({UID: work.userId, IID: work.id}),
+			data: qs.stringify({
+				UID: work.userId,
+				IID: work.id,
+			}),
 		});
 
 		const $ = cheerio.load(data.html);
