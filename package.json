@@ -8,7 +8,7 @@
     "poipiku": "serverless invoke local -f crawlPoipiku"
   },
   "dependencies": {
-    "axios": "^0.26.1",
+    "axios": "^0.27.2",
     "cheerio": "^0.22.0",
     "image-size": "^1.0.1",
     "lodash": "^4.17.21",
