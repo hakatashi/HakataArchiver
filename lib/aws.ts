@@ -35,6 +35,7 @@ export const uploadImage = async (image: Buffer, filename: string) => {
 		Bucket: 'hakataarchive',
 		Key: filename,
 		Body: image,
+		StorageClass: 'GLACIER_IR',
 		Metadata: {
 			width: dimension.width.toString(),
 			height: dimension.height.toString(),

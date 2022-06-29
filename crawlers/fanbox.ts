@@ -263,6 +263,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 				Bucket: 'hakataarchive',
 				Key: `fanbox/${path.posix.basename(file.url)}`,
 				Body: fileData,
+				StorageClass: 'GLACIER_IR',
 			}).promise();
 			await incrementCounter('FanboxFileSaved');
 		}
