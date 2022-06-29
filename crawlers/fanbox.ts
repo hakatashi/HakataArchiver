@@ -169,6 +169,11 @@ const handler: ScheduledHandler = async (_event, context) => {
 	console.log('[fanbox] Session ID retrieved.');
 
 	for await (const postSummary of iterateAllHistory(session)) {
+		if (context.getRemainingTimeInMillis() <= 60 * 1000) {
+			console.log(`[fanbox] Remaining time (${context.getRemainingTimeInMillis()}ms) is short. Giving up...`);
+			break;
+		}
+
 		if (existingIds.has(postSummary.id)) {
 			continue;
 		}
@@ -193,6 +198,11 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 		console.log(`[fanbox] Saving ${images.length} images...`);
 		for (const image of images) {
+			if (context.getRemainingTimeInMillis() <= 10 * 1000) {
+				console.log('[fanbox] Remaining time is too short. Stopping immediately.');
+				return;
+			}
+
 			await wait(1000);
 			const {data: imageData, status} = await axios.get<Buffer>(image.originalUrl, {
 				responseType: 'arraybuffer',
