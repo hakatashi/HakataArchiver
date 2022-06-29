@@ -20,6 +20,10 @@ interface CreatorResponse {
 	},
 }
 
+interface File {
+	url: string,
+}
+
 interface Image {
 	originalUrl: string,
 	thumbnailUrl: string,
@@ -30,6 +34,10 @@ interface Item {
 		images?: Image[],
 		imageMap?: {
 			[imageId: string]: Image,
+		},
+		files?: File[],
+		fileMap?: {
+			[fileId: string]: File,
 		},
 	} | null,
 	id: string,
@@ -119,8 +127,7 @@ async function* iterateAllHistory(session: string) {
 	}
 }
 
-// eslint-disable-next-line no-unused-vars
-const handler: ScheduledHandler = async (_event, _context) => {
+const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
 	const existingIds = new Set();
@@ -218,6 +225,36 @@ const handler: ScheduledHandler = async (_event, _context) => {
 			} else {
 				throw new Error(`Status code not ok: ${status}`);
 			}
+		}
+
+		const files = [
+			...post.body?.files ?? [],
+			...Object.values(post.body?.fileMap ?? {}),
+		];
+
+		console.log(`[fanbox] Saving ${files.length} files...`);
+		for (const file of files) {
+			if (context.getRemainingTimeInMillis() <= 10 * 1000) {
+				console.log('[fanbox] Remaining time is too short. Stopping immediately.');
+				return;
+			}
+
+			await wait(1000);
+			const {data: fileData} = await axios.get<Buffer>(file.url, {
+				responseType: 'arraybuffer',
+				headers: {
+					'User-Agent': USER_AGENT,
+					Origin: 'https://www.fanbox.cc',
+					Cookie: `FANBOXSESSID=${session}`,
+				},
+			});
+
+			await s3.upload({
+				Bucket: 'hakataarchive',
+				Key: `fanbox/${path.posix.basename(file.url)}`,
+				Body: fileData,
+			}).promise();
+			await incrementCounter('FanboxFileSaved');
 		}
 
 		console.log(`[fanbox] Saving post info... (id = ${post.id})`);
