@@ -5,9 +5,6 @@ custom:
   webpack:
     webpackConfig: ./webpack.config.js
     includeModules: true
-  profiles:
-    dev: serverless
-    production: default
   productionOnly:
     dev: false
     production: true
@@ -26,7 +23,6 @@ provider:
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
     HAKATASHI_API_KEY: ${env:HAKATASHI_API_KEY, "test_hakatashi_api_key"}
-  profile: ${self:custom.profiles.${self:provider.stage}}
   iamRoleStatements:
     - Effect: Allow
       Action:
