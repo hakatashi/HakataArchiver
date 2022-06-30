@@ -60,13 +60,13 @@ functions:
           rate: cron(51 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
-  crawlFanbox:
-    handler: crawlers/fanbox.default
-    events:
-      - schedule:
-          rate: cron(8 * * * ? *)
-          enabled: ${self:custom.productionOnly.${self:provider.stage}}
-    timeout: 900
+#  crawlFanbox:
+#    handler: crawlers/fanbox.default
+#    events:
+#      - schedule:
+#          rate: cron(8 * * * ? *)
+#          enabled: ${self:custom.productionOnly.${self:provider.stage}}
+#    timeout: 900
   postSession:
     handler: lib/postSession.default
     events:
