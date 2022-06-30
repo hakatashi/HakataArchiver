@@ -101,6 +101,7 @@ async function* iterateAllHistory(session: string) {
 				Cookie: `FANBOXSESSID=${session}`,
 			},
 		});
+		console.log(`[fanbox] Retrieved ${body.items.length} posts from creator ${creator.creatorId}.`);
 
 		for (const item of body.items) {
 			yield item;
