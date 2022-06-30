@@ -64,7 +64,7 @@ functions:
     handler: crawlers/fanbox.default
     events:
       - schedule:
-          rate: cron(51 * * * ? *)
+          rate: cron(8 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
   postSession:
