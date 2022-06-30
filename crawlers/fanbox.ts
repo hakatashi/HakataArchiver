@@ -41,6 +41,7 @@ interface Item {
 		},
 	} | null,
 	id: string,
+	isRestricted: boolean,
 }
 
 interface ItemsResponse {
@@ -131,12 +132,12 @@ async function* iterateAllHistory(session: string) {
 const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
-	const existingIds = new Set();
+	const existingIds = new Map<string, boolean>();
 	while (lastKey !== undefined) {
 		await wait(5000);
 		const existingEntries = await db.scan({
 			TableName: 'hakataarchive-entries-fanbox',
-			ProjectionExpression: 'id',
+			ProjectionExpression: 'id,isRestricted',
 			ReturnConsumedCapacity: 'INDEXES',
 			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
 		}).promise();
@@ -146,7 +147,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		lastKey = existingEntries.LastEvaluatedKey;
 
 		for (const item of existingEntries.Items) {
-			existingIds.add(item.id);
+			existingIds.set(item.id, item.isRestricted);
 		}
 	}
 
@@ -155,7 +156,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	await s3.upload({
 		Bucket: 'hakataarchive',
 		Key: 'index/fanbox.json',
-		Body: JSON.stringify(Array.from(existingIds)),
+		Body: JSON.stringify(Array.from(existingIds.keys())),
 	}).promise();
 	console.log('[fanbox] Uploaded item indices into S3');
 
@@ -176,7 +177,10 @@ const handler: ScheduledHandler = async (_event, context) => {
 		}
 
 		if (existingIds.has(postSummary.id)) {
-			continue;
+			const isRestricted = existingIds.get(postSummary.id);
+			if (!isRestricted || postSummary.isRestricted) {
+				continue;
+			}
 		}
 
 		console.log(`[fanbox] Retrieving post... (id = ${postSummary.id})`);
