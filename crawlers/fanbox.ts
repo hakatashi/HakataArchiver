@@ -1,3 +1,5 @@
+/* eslint-disable func-style */
+/* eslint-disable require-jsdoc */
 import * as path from 'path';
 import {inspect} from 'util';
 import type {ScheduledHandler} from 'aws-lambda';
@@ -6,6 +8,8 @@ import 'source-map-support/register.js';
 import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 
 const PER_PAGE = 56;
+const mode = 'home';
+
 const wait = (time: number) => new Promise((resolve) => {
 	setTimeout(resolve, time);
 });
@@ -62,7 +66,6 @@ interface ItemResponse {
 // :innocent:
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
 
-// eslint-disable-next-line func-style, require-jsdoc
 async function* iterateAllHistory(session: string) {
 	console.log('[fanbox] Getting list of followers...');
 	await wait(1000);
@@ -129,6 +132,55 @@ async function* iterateAllHistory(session: string) {
 	}
 }
 
+async function* iterateHome(session: string, existingIds: Map<string, boolean>) {
+	console.log('[fanbox] Getting home items...');
+	await wait(1000);
+	const {data: {body}}: ItemsResponse = await axios.get('https://api.fanbox.cc/post.listHome', {
+		params: {
+			limit: PER_PAGE,
+		},
+		headers: {
+			'User-Agent': USER_AGENT,
+			Origin: 'https://www.fanbox.cc',
+			Cookie: `FANBOXSESSID=${session}`,
+		},
+	});
+
+	console.log(`[fanbox] Retrieved ${body.items.length} items.`);
+	for (const item of body.items) {
+		yield item;
+	}
+
+	let nextPageUrl = body.nextUrl;
+	let page = 1;
+	while (nextPageUrl) {
+		page++;
+		console.log(`[fanbox] Getting home items... (params = ${new URL(nextPageUrl).search})`);
+		await wait(1000);
+		const {data: {body: nextBody}}: ItemsResponse = await axios.get(nextPageUrl, {
+			headers: {
+				'User-Agent': USER_AGENT,
+				Origin: 'https://www.fanbox.cc',
+				Cookie: `FANBOXSESSID=${session}`,
+			},
+		});
+		console.log(`[fanbox] Retrieved ${nextBody.items.length} items.`);
+
+		nextPageUrl = nextBody.nextUrl;
+		let hasNewItem = false;
+		for (const item of nextBody.items) {
+			if (!existingIds.has(item.id)) {
+				hasNewItem = true;
+			}
+			yield item;
+		}
+
+		if (page > 3 && !hasNewItem) {
+			break;
+		}
+	}
+}
+
 const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
@@ -170,7 +222,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 	console.log('[fanbox] Session ID retrieved.');
 
-	for await (const postSummary of iterateAllHistory(session)) {
+	const posts = mode === 'home' ? iterateHome(session, existingIds) : iterateAllHistory(session);
+	for await (const postSummary of posts) {
 		if (context.getRemainingTimeInMillis() <= 60 * 1000) {
 			console.log(`[fanbox] Remaining time (${context.getRemainingTimeInMillis()}ms) is short. Giving up...`);
 			break;
