@@ -1,5 +1,4 @@
-service:
-  name: hakataarchiver
+service: hakataarchiver
 
 custom:
   defaultStage: dev
@@ -8,7 +7,7 @@ custom:
     includeModules: true
   profiles:
     dev: serverless
-    production: null
+    production: default
   productionOnly:
     dev: false
     production: true
@@ -26,7 +25,7 @@ provider:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
-    HAKATASHI_API_KEY: ${env:HAKATASHI_API_KEY}
+    HAKATASHI_API_KEY: ${env:HAKATASHI_API_KEY, "test_hakatashi_api_key"}
   profile: ${self:custom.profiles.${self:provider.stage}}
   iamRoleStatements:
     - Effect: Allow
