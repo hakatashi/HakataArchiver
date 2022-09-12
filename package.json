@@ -20,7 +20,7 @@
     "@hakatashi/eslint-config": "^1.19.0",
     "@types/aws-lambda": "^8.10.103",
     "@types/cheerio": "^0.22.31",
-    "@types/lodash": "^4.14.184",
+    "@types/lodash": "^4.14.185",
     "@types/node": "^18.7.16",
     "@types/oauth": "^0.9.1",
     "aws-sdk": "^2.1212.0",
