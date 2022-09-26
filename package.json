@@ -21,7 +21,7 @@
     "@types/aws-lambda": "^8.10.104",
     "@types/cheerio": "^0.22.31",
     "@types/lodash": "^4.14.185",
-    "@types/node": "^18.7.18",
+    "@types/node": "^18.7.22",
     "@types/oauth": "^0.9.1",
     "aws-sdk": "^2.1222.0",
     "dotenv": "^16.0.2",
