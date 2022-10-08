@@ -62,6 +62,7 @@ functions:
           rate: cron(8 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
+    memorySize: 4096
   postSession:
     handler: lib/postSession.default
     events:
