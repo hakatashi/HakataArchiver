@@ -25,7 +25,7 @@
     "@types/oauth": "^0.9.1",
     "aws-sdk": "^2.1257.0",
     "dotenv": "^16.0.3",
-    "eslint": "^8.27.0",
+    "eslint": "^8.28.0",
     "fork-ts-checker-webpack-plugin": "^7.2.13",
     "scrape-it": "^5.3.2",
     "serverless-webpack": "^5.10.0",
