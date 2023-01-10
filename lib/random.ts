@@ -4,6 +4,8 @@ import {basename} from 'path';
 // eslint-disable-next-line no-unused-vars
 import type {APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda';
 import 'source-map-support/register.js';
+import type {DynamoDB} from 'aws-sdk';
+import {sampleSize} from 'lodash';
 import get from 'lodash/get';
 import sample from 'lodash/sample';
 import {db, s3} from './aws';
@@ -107,26 +109,41 @@ export const pixiv: APIGatewayProxyHandler = async (event) => {
 		visibility = 'private';
 	}
 
+	let count = parseInt(get(event, ['queryStringParameters', 'count'], ''));
+	if (Number.isNaN(count) || count > 100 || count < 1) {
+		count = 1;
+	}
+
 	const result = await s3.getObject({
 		Bucket: 'hakataarchive',
 		Key: 'index/pixiv.json',
 	}).promise();
 	const entryIds = JSON.parse(result.Body.toString());
-	const entryId = sample(entryIds[visibility]);
+	const sampledEntryIds = sampleSize(entryIds[visibility], count);
 
-	const {Item: entry} = await db.get({
-		TableName: 'hakataarchive-entries-pixiv',
-		Key: {
-			illustId: entryId,
+	const {Responses: responses} = await db.batchGet({
+		RequestItems: {
+			'hakataarchive-entries-pixiv': {
+				Keys: sampledEntryIds.map((entryId) => ({
+					illustId: entryId,
+				})),
+			},
 		},
 	}).promise();
 
-	const photoItems = await s3.listObjectsV2({
-		Bucket: 'hakataarchive',
-		Prefix: `pixiv/${entryId}_`,
-	}).promise();
+	const entries = get(responses, 'hakataarchive-entries-pixiv', [] as DynamoDB.DocumentClient.ItemList);
 
-	const sortedContents = await Promise.all(photoItems.Contents.sort((a, b) => (
+	const photoItemsList = await Promise.all(sampledEntryIds.map(async (entryId) => {
+		const items = await s3.listObjectsV2({
+			Bucket: 'hakataarchive',
+			Prefix: `pixiv/${entryId}_`,
+		}).promise();
+		return items.Contents || [];
+	}));
+
+	const photoItems = photoItemsList.flat();
+
+	const sortedContents = await Promise.all(photoItems.sort((a, b) => (
 		parseInt(a.Key.split('_p')[1]) - parseInt(b.Key.split('_p')[1])
 	)).map(async (content) => {
 		const head = await s3.headObject({
@@ -158,7 +175,8 @@ export const pixiv: APIGatewayProxyHandler = async (event) => {
 			'Access-Control-Allow-Origin': origin,
 		},
 		body: JSON.stringify({
-			entry,
+			entry: entries[0],
+			entries,
 			media,
 		}),
 	};

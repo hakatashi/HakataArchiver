@@ -8,7 +8,7 @@ import 'source-map-support/register.js';
 import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 
 const PER_PAGE = 56;
-const mode = 'home';
+const mode = 'all';
 
 const wait = (time: number) => new Promise((resolve) => {
 	setTimeout(resolve, time);
@@ -67,6 +67,9 @@ interface ItemResponse {
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
 
 async function* iterateAllHistory(session: string) {
+	console.log('starting');
+
+	/*
 	console.log('[fanbox] Getting list of followers...');
 	await wait(1000);
 	const {data: {body: followers}}: CreatorResponse = await axios.get('https://api.fanbox.cc/creator.listFollowing', {
@@ -90,13 +93,14 @@ async function* iterateAllHistory(session: string) {
 	});
 
 	console.log(`[fanbox] Retrieved ${supportings.length} supportings.`);
+	*/
 
-	for (const creator of [...followers, ...supportings]) {
-		console.log(`[fanbox] Getting posts from creator ${creator.creatorId}...`);
+	for (const creatorId of ['kohamina', 'mumumuseijin']) {
+		console.log(`[fanbox] Getting posts from creator ${creatorId}...`);
 		await wait(1000);
 		const {data: {body}}: ItemsResponse = await axios.get('https://api.fanbox.cc/post.listCreator', {
 			params: {
-				creatorId: creator.creatorId,
+				creatorId,
 				limit: PER_PAGE,
 			},
 			headers: {
@@ -105,7 +109,7 @@ async function* iterateAllHistory(session: string) {
 				Cookie: `FANBOXSESSID=${session}`,
 			},
 		});
-		console.log(`[fanbox] Retrieved ${body.items.length} posts from creator ${creator.creatorId}.`);
+		console.log(`[fanbox] Retrieved ${body.items.length} posts from creator ${creatorId}.`);
 
 		for (const item of body.items) {
 			yield item;
@@ -113,7 +117,7 @@ async function* iterateAllHistory(session: string) {
 
 		let nextPageUrl = body.nextUrl;
 		while (nextPageUrl) {
-			console.log(`[fanbox] Getting posts from creator ${creator.creatorId}... (params = ${new URL(nextPageUrl).search})`);
+			console.log(`[fanbox] Getting posts from creator ${creatorId}... (params = ${new URL(nextPageUrl).search})`);
 			await wait(1000);
 			const {data: {body: nextBody}}: ItemsResponse = await axios.get(nextPageUrl, {
 				headers: {
@@ -122,7 +126,7 @@ async function* iterateAllHistory(session: string) {
 					Cookie: `FANBOXSESSID=${session}`,
 				},
 			});
-			console.log(`[fanbox] Retrieved ${nextBody.items.length} posts from creator ${creator.creatorId}.`);
+			console.log(`[fanbox] Retrieved ${nextBody.items.length} posts from creator ${creatorId}.`);
 
 			nextPageUrl = nextBody.nextUrl;
 			for (const item of nextBody.items) {
@@ -226,7 +230,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	for await (const postSummary of posts) {
 		if (context.getRemainingTimeInMillis() <= 60 * 1000) {
 			console.log(`[fanbox] Remaining time (${context.getRemainingTimeInMillis()}ms) is short. Giving up...`);
-			break;
+			// break;
 		}
 
 		if (existingIds.has(postSummary.id)) {
@@ -258,7 +262,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		for (const image of images) {
 			if (context.getRemainingTimeInMillis() <= 10 * 1000) {
 				console.log('[fanbox] Remaining time is too short. Stopping immediately.');
-				return;
+				// return;
 			}
 
 			await wait(1000);
@@ -304,7 +308,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		for (const file of files) {
 			if (context.getRemainingTimeInMillis() <= 10 * 1000) {
 				console.log('[fanbox] Remaining time is too short. Stopping immediately.');
-				return;
+				// return;
 			}
 
 			await wait(1000);

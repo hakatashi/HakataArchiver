@@ -135,7 +135,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 		}
 
-		if (page >= 9) {
+		if (workIds.length === 0) {
 			break;
 		}
 
@@ -149,8 +149,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 	for (const work of newWorks) {
 		const remainingTime = context.getRemainingTimeInMillis();
 		if (remainingTime <= 60 * 1000) {
-			console.log(`[poipiku] Remaining time (${remainingTime}ms) is short. Giving up...`);
-			break;
+			// console.log(`[poipiku] Remaining time (${remainingTime}ms) is short. Giving up...`);
+			// break;
 		}
 
 		console.log(`[poipiku] Retrieving appended data of id=${work.id}...`);
@@ -158,7 +158,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 
 		await wait(1000);
-		const {data} = await axios({
+		const {data, status} = await axios({
 			url: 'https://poipiku.com/f/ShowAppendFileF.jsp',
 			method: 'post',
 			headers: {
@@ -171,7 +171,13 @@ const handler: ScheduledHandler = async (_event, context) => {
 				UID: work.userId,
 				IID: work.id,
 			}),
+			validateStatus: null,
 		});
+
+		if (status !== 200) {
+			console.log(`Warn: Status code (${status}) is not healthy. Aborting...`);
+			continue;
+		}
 
 		const $ = cheerio.load(data.html);
 		$('img').each(function () {
@@ -180,25 +186,37 @@ const handler: ScheduledHandler = async (_event, context) => {
 			);
 		});
 
+		let isError = false;
 		for (const imageUrl of work.imageUrls) {
 			if (context.getRemainingTimeInMillis() <= 10 * 1000) {
-				console.log('Remaining time is too short. Stopping immediately.');
-				return;
+				// console.log('Remaining time is too short. Stopping immediately.');
+				// return;
 			}
 
 			const fetchUrl = imageUrl.replace(/_640\.jpg$/, '');
 
 			await wait(1000);
-			const {data: imageData} = await axios.get<Buffer>(fetchUrl, {
+			const {data: imageData, status} = await axios.get<Buffer>(fetchUrl, {
 				responseType: 'arraybuffer',
 				headers: {
 					'User-Agent': USER_AGENT,
 					Referer: 'https://www.poipiku.net/',
 				},
+				validateStatus: null,
 			});
+
+			if (status !== 200) {
+				console.log(`Warn: Status code (${status}) is not healthy. Aborting...`);
+				isError = true;
+				continue;
+			}
 
 			await uploadImage(imageData, `poipiku/${path.posix.basename(fetchUrl)}`);
 			await incrementCounter('PoipikuImageSaved');
+		}
+
+		if (isError) {
+			continue;
 		}
 
 		await db.put({
