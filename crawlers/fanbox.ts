@@ -5,6 +5,7 @@ import {inspect} from 'util';
 import type {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import 'source-map-support/register.js';
+import {chunk, groupBy} from 'lodash';
 import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 
 const PER_PAGE = 56;
@@ -46,6 +47,7 @@ interface Item {
 	} | null,
 	id: string,
 	isRestricted: boolean,
+	creatorId: string,
 }
 
 interface ItemsResponse {
@@ -185,22 +187,50 @@ const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
 	const existingIds = new Map<string, boolean>();
+	const entries: Item[] = [];
 	while (lastKey !== undefined) {
 		await wait(5000);
 		const existingEntries = await db.scan({
 			TableName: 'hakataarchive-entries-fanbox',
-			ProjectionExpression: 'id,isRestricted',
+			ProjectionExpression: 'id,isRestricted,creatorId',
 			ReturnConsumedCapacity: 'INDEXES',
 			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
 		}).promise();
-		console.log(`[fanbox] Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
+
+		const items = existingEntries.Items as Item[];
+		console.log(`[fanbox] Retrieved ${items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
 		console.log(`[fanbox] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
 
 		lastKey = existingEntries.LastEvaluatedKey;
+		entries.push(...items);
 
-		for (const item of existingEntries.Items) {
+		for (const item of items) {
 			existingIds.set(item.id, item.isRestricted);
 		}
+	}
+
+	const entriesByCreatorId = Object.entries(groupBy(entries, (entry) => entry.creatorId));
+	for (const entriesChunk of chunk(entriesByCreatorId, 25)) {
+		const result = await db.batchWrite({
+			RequestItems: {
+				'hakataarchive-entries-fanbox-creators': entriesChunk.map(([creatorId, creatorEntries]) => ({
+					PutRequest: {
+						Item: {
+							creatorId,
+							postIds: db.createSet(creatorEntries.map((entry) => entry.id)),
+							restrictedPostIds: db.createSet(
+								creatorEntries
+									.filter((entry) => entry.isRestricted)
+									.map((entry) => entry.creatorId),
+							),
+						},
+					},
+				})),
+			},
+		}).promise();
+		console.log('[fanbox] Updated creators table.');
+		console.log(`[fanbox] Unprocessed items size: ${result.UnprocessedItems.length}`);
+		console.log(`[fanbox] Consumed capacity: ${inspect(result.ConsumedCapacity)}`);
 	}
 
 	console.log(`[fanbox] Retrieved ${existingIds.size} ids in total`);
