@@ -1,6 +1,7 @@
 /* global BigInt */
 
-import {basename} from 'path';
+import path from 'path';
+import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
 import type {APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda';
 import 'source-map-support/register.js';
@@ -9,6 +10,16 @@ import {sampleSize} from 'lodash';
 import get from 'lodash/get';
 import sample from 'lodash/sample';
 import {db, s3} from './aws';
+
+interface StringSet {
+	values: string[],
+}
+
+interface CreatorsItem {
+	creatorId: string,
+	postIds?: StringSet,
+	savedPostIds?: StringSet,
+}
 
 // eslint-disable-next-line no-extend-native
 BigInt.prototype.toJSON = function () {
@@ -177,6 +188,88 @@ export const pixiv: APIGatewayProxyHandler = async (event) => {
 		body: JSON.stringify({
 			entry: entries[0],
 			entries,
+			media,
+		}),
+	};
+};
+
+export const fanbox: APIGatewayProxyHandler = async (event) => {
+	const error = verifyRequest(event);
+
+	if (error !== null) {
+		return error;
+	}
+
+	// Retrieve all existing ids of database
+	let lastKey = null;
+	const postIds: string[] = [];
+	while (lastKey !== undefined) {
+		const existingEntries = await db.scan({
+			TableName: 'hakataarchive-entries-fanbox-creators',
+			ProjectionExpression: 'savedPostIds',
+			ReturnConsumedCapacity: 'INDEXES',
+			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
+		}).promise();
+
+		const items = existingEntries.Items as CreatorsItem[];
+		console.log(`[fanbox] Retrieved ${items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
+		console.log(`[fanbox] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
+
+		lastKey = existingEntries.LastEvaluatedKey;
+
+		for (const item of items) {
+			postIds.push(...(item.savedPostIds?.values ?? []));
+		}
+	}
+
+	const postId = sample(postIds);
+
+	const {Item: post} = await db.get({
+		TableName: 'hakataarchive-entries-fanbox',
+		Key: {
+			id: postId,
+		},
+	}).promise();
+
+	const images = [
+		...post.body?.images ?? [],
+		...Object.values(post.body?.imageMap ?? {}),
+	];
+
+	const mediaContents = await Promise.all(images.map(async (image) => {
+		const filename = path.posix.basename(image.originalUrl);
+		const key = `fanbox/${filename}`;
+		const head = await s3.headObject({
+			Bucket: 'hakataarchive',
+			Key: key,
+		}).promise();
+		return {...head, Key: key, originalUrl: image.originalUrl};
+	}));
+
+	const media = mediaContents.map((item) => {
+		const url = s3.getSignedUrl('getObject', {
+			Bucket: 'hakataarchive',
+			Key: item.Key,
+		});
+		return {
+			src: url,
+			originalUrl: item.originalUrl,
+			w: parseInt(item.Metadata.width),
+			h: parseInt(item.Metadata.height),
+		};
+	});
+
+	const origin = get(event, ['headers', 'origin'], '');
+
+	return {
+		statusCode: 200,
+		headers: {
+			'Content-Type': 'application/json',
+			Vary: 'Origin',
+			'Access-Control-Allow-Origin': origin,
+		},
+		body: JSON.stringify({
+			post,
 			media,
 		}),
 	};

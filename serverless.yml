@@ -81,3 +81,21 @@ functions:
       - http:
           method: get
           path: random/pixiv
+  randomFanbox:
+    handler: lib/random.fanbox
+    events:
+      - http:
+          method: get
+          path: random/fanbox
+  fanboxListCreators:
+    handler: lib/fanbox.listCreators
+    events:
+      - http:
+          method: get
+          path: fanbox/listCreators
+  fanboxGetCreatorPosts:
+    handler: lib/fanbox.getCreatorPosts
+    events:
+      - http:
+          method: get
+          path: fanbox/getCreatorPosts
