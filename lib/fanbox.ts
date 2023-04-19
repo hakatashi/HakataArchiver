@@ -1,9 +1,10 @@
+import path from 'path';
 import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
 import type {APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult} from 'aws-lambda';
 import 'source-map-support/register.js';
 import get from 'lodash/get';
-import {db} from './aws';
+import {db, s3} from './aws';
 
 interface StringSet {
 	values: string[],
