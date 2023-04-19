@@ -87,6 +87,12 @@ functions:
       - http:
           method: get
           path: random/fanbox
+  fanboxGetPost:
+    handler: lib/fanbox.getPost
+    events:
+      - http:
+          method: get
+          path: fanbox/getPost
   fanboxListCreators:
     handler: lib/fanbox.listCreators
     events:
