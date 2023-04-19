@@ -80,7 +80,7 @@ export const twitter: APIGatewayProxyHandler = async (event) => {
 		},
 	}).promise();
 	const media = get(entry, ['extended_entities', 'media'], []).map((medium) => {
-		const filename = basename(medium.media_url_https);
+		const filename = path.posix.basename(medium.media_url_https);
 		const url = s3.getSignedUrl('getObject', {
 			Bucket: 'hakataarchive',
 			Key: `twitter/${filename}`,
