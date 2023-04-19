@@ -15,6 +15,10 @@ const wait = (time: number) => new Promise((resolve) => {
 	setTimeout(resolve, time);
 });
 
+interface StringSet {
+	values: string[],
+}
+
 interface Creator {
 	creatorId: string,
 }
@@ -48,6 +52,12 @@ interface Item {
 	id: string,
 	isRestricted: boolean,
 	creatorId: string,
+}
+
+interface CreatorsItem {
+	creatorId: string,
+	postIds?: StringSet,
+	savedPostIds?: StringSet,
 }
 
 interface ItemsResponse {
@@ -187,50 +197,57 @@ const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
 	const existingIds = new Map<string, boolean>();
-	const entries: Item[] = [];
 	while (lastKey !== undefined) {
 		await wait(5000);
 		const existingEntries = await db.scan({
-			TableName: 'hakataarchive-entries-fanbox',
-			ProjectionExpression: 'id,isRestricted,creatorId',
+			TableName: 'hakataarchive-entries-fanbox-creators',
+			ProjectionExpression: 'creatorId,postIds,savedPostIds',
 			ReturnConsumedCapacity: 'INDEXES',
 			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
 		}).promise();
 
-		const items = existingEntries.Items as Item[];
+		const items = existingEntries.Items as CreatorsItem[];
 		console.log(`[fanbox] Retrieved ${items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
 		console.log(`[fanbox] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
 
 		lastKey = existingEntries.LastEvaluatedKey;
-		entries.push(...items);
 
 		for (const item of items) {
-			existingIds.set(item.id, item.isRestricted);
+			const savedPostIds = new Set(item.savedPostIds?.values ?? []);
+			for (const postId of item.postIds?.values ?? []) {
+				existingIds.set(postId, !savedPostIds.has(postId));
+			}
 		}
 	}
 
-	const entriesByCreatorId = Object.entries(groupBy(entries, (entry) => entry.creatorId));
-	for (const entriesChunk of chunk(entriesByCreatorId, 25)) {
-		const result = await db.batchWrite({
-			RequestItems: {
-				'hakataarchive-entries-fanbox-creators': entriesChunk.map(([creatorId, creatorEntries]) => ({
-					PutRequest: {
-						Item: {
-							creatorId,
-							postIds: db.createSet(creatorEntries.map((entry) => entry.id)),
-							restrictedPostIds: db.createSet(
-								creatorEntries
-									.filter((entry) => entry.isRestricted)
-									.map((entry) => entry.creatorId),
-							),
-						},
-					},
-				})),
-			},
-		}).promise();
-		console.log('[fanbox] Updated creators table.');
-		console.log(`[fanbox] Unprocessed items size: ${result.UnprocessedItems.length}`);
-		console.log(`[fanbox] Consumed capacity: ${inspect(result.ConsumedCapacity)}`);
+	if (false) {
+		const entriesByCreatorId = Object.entries(groupBy(entries, (entry) => entry.creatorId));
+		for (const entriesChunk of chunk(entriesByCreatorId, 25)) {
+			console.log('[fanbox] Updating creators table.');
+			console.log(inspect(entriesChunk, {depth: null, maxArrayLength: null}));
+			const result = await db.batchWrite({
+				RequestItems: {
+					'hakataarchive-entries-fanbox-creators': entriesChunk.map(([creatorId, creatorEntries]) => {
+						const postIds = creatorEntries.map((entry) => entry.id);
+						const savedPostIds =
+									creatorEntries
+										.filter((entry) => entry.isRestricted === false)
+										.map((entry) => entry.id);
+						return {
+							PutRequest: {
+								Item: {
+									creatorId,
+									...(postIds.length > 0 ? {postIds: db.createSet(postIds)} : {}),
+									...(savedPostIds.length > 0 ? {savedPostIds: db.createSet(savedPostIds)} : {}),
+								},
+							},
+						};
+					}),
+				},
+			}).promise();
+			console.log(`[fanbox] Unprocessed items size: ${result.UnprocessedItems.length}`);
+			console.log(`[fanbox] Consumed capacity: ${inspect(result.ConsumedCapacity)}`);
+		}
 	}
 
 	console.log(`[fanbox] Retrieved ${existingIds.size} ids in total`);
@@ -360,6 +377,26 @@ const handler: ScheduledHandler = async (_event, context) => {
 		await db.put({
 			TableName: 'hakataarchive-entries-fanbox',
 			Item: post,
+		}).promise();
+
+		await db.update({
+			TableName: 'hakataarchive-entries-fanbox-creators',
+			Key: {
+				creatorId: post.creatorId,
+			},
+			...(post.isRestricted ? {
+				UpdateExpression: 'ADD postIds :postIds',
+				ExpressionAttributeValues: {
+					':postIds': db.createSet([post.id]),
+				},
+			} : {
+				UpdateExpression: 'ADD savedPostIds :savedPostIds, postIds :postIds',
+				ExpressionAttributeValues: {
+					':savedPostIds': db.createSet([post.id]),
+					':postIds': db.createSet([post.id]),
+				},
+			}),
+			ReturnValues: 'UPDATED_NEW',
 		}).promise();
 	}
 };
