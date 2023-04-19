@@ -238,21 +238,28 @@ export const fanbox: APIGatewayProxyHandler = async (event) => {
 
 	const mediaContents = await Promise.all(images.map(async (image) => {
 		const filename = path.posix.basename(image.originalUrl);
+		const id = path.parse(filename).name;
 		const key = `fanbox/${filename}`;
 		const head = await s3.headObject({
 			Bucket: 'hakataarchive',
 			Key: key,
 		}).promise();
-		return {...head, Key: key, originalUrl: image.originalUrl};
+		return {
+			...head,
+			key,
+			id,
+			originalUrl: image.originalUrl,
+		};
 	}));
 
 	const imageInfos = mediaContents.map((item) => {
 		const url = s3.getSignedUrl('getObject', {
 			Bucket: 'hakataarchive',
-			Key: item.Key,
+			Key: item.key,
 		});
 		return {
 			src: url,
+			id: item.id,
 			originalUrl: item.originalUrl,
 			w: parseInt(item.Metadata.width),
 			h: parseInt(item.Metadata.height),
@@ -266,12 +273,15 @@ export const fanbox: APIGatewayProxyHandler = async (event) => {
 
 	const fileInfos = files.map((file) => {
 		const filename = path.posix.basename(file.url);
+		const id = path.parse(filename).name;
 		const url = s3.getSignedUrl('getObject', {
 			Bucket: 'hakataarchive',
 			Key: `fanbox/${filename}`,
 		});
 		return {
 			url,
+			id,
+			originalUrl: file.url,
 		};
 	});
 
