@@ -1,6 +1,9 @@
 {
 	"extends": "@hakatashi/eslint-config/typescript",
 	"parser": "@typescript-eslint/parser",
+	"parserOptions": {
+		"ecmaVersion": "latest"
+	},
 	"rules": {
 		"no-console": "off",
 		"no-undef-init": "off",
