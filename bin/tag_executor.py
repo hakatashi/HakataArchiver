@@ -24,7 +24,7 @@ print('Loaded {} documents'.format(len(doc_ids)))
 
 for media_object in s3.Bucket('hakataarchive').objects.all():
     normalized_key = normalize_key(media_object.key)
-    if any(filter(normalized_key.endswith, ['.mp4', '.zip', '.psd', '.mp3', '.avi', '.clip'])):
+    if any(filter(normalized_key.endswith, ['.mp4', '.zip', '.psd', '.mp3', '.avi', '.clip', '.pdf', '.wav'])):
         continue
     if normalized_key in doc_ids:
         continue
