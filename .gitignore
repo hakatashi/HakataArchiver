@@ -11,3 +11,9 @@ jspm_packages
 .env
 data.json
 temp.ts
+
+*.jpg
+*.png
+hakataarrchive-*.json
+
+__pycache__

@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "hakataarchiver"
+version = "0.1.0"
+description = ""
+authors = ["Koki Takahashi <hakatasiloving@gmail.com>"]
+license = "MIT Licence"
+readme = "README.md"
+packages = [{include = "hakataarchiver"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+regex = "^2022.10.31"
+python-dotenv = "^0.21.0"
+google-api-python-client = "^2.66.0"
+firebase-admin = "^6.0.1"
+datasets = "^2.9.0"
+evaluate = "^0.4.0"
+transformers = {git = "https://github.com/huggingface/transformers"}
+pillow = "^9.5.0"
+torchvision = "^0.15.2"
+torch = { version = "^2.0.1+cu117", source = "cu117" }
+boto3 = "^1.26.138"
+
+
+[[tool.poetry.source]]
+name = "cu117"
+url = "https://download.pytorch.org/whl/cu117/"
+priority = "explicit"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
