@@ -8,19 +8,18 @@ with urllib.request.urlopen("https://github.com/RF5/danbooru-pretrained/raw/mast
 
 model = torch.hub.load('RF5/danbooru-pretrained', 'resnet50')
 model.eval()
+model = model.to('cuda')
 
 preprocess = transforms.Compose([
     transforms.Resize(360),
     transforms.ToTensor(),
+    transforms.Normalize(mean=[0.7137, 0.6628, 0.6519], std=[0.2970, 0.3017, 0.2979]),
 ])
 
 def get_tags(input_image, threshold = 0.1):
     input_tensor = preprocess(input_image)
     input_batch = input_tensor.unsqueeze(0)
-
-    if torch.cuda.is_available():
-        input_batch = input_batch.to('cuda')
-        model.to('cuda')
+    input_batch = input_batch.to('cuda')
 
     with torch.no_grad():
         output = model(input_batch)

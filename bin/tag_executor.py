@@ -31,7 +31,13 @@ for media_object in s3.Bucket('hakataarchive').objects.all():
 
     s3_response_object = s3_client.get_object(Bucket='hakataarchive', Key=media_object.key)
     object_content = s3_response_object['Body'].read()
-    input_image = Image.open(io.BytesIO(object_content))
+
+    try:
+        input_image = Image.open(io.BytesIO(object_content))
+    except Exception as e:
+        print('Image open failed')
+        print(e)
+        continue
 
     print('Downloaded image from S3 (format = {}, size = {}, mode = {})'.format(input_image.format, input_image.size, input_image.mode))
 
@@ -40,7 +46,7 @@ for media_object in s3.Bucket('hakataarchive').objects.all():
 
     print('Tagging image...')
 
-    tags_obj = get_tags(input_image)
+    tags_obj = get_tags(input_image, threshold = 0.05)
 
     print('Uploading tags to Firestore...')
 
