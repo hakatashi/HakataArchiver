@@ -105,3 +105,9 @@ functions:
       - http:
           method: get
           path: fanbox/getCreatorPosts
+  getImages:
+    handler: lib/root.getImages
+    events:
+      - http:
+          method: get
+          path: getImages
