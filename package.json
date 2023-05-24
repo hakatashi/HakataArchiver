@@ -24,7 +24,7 @@
     "@types/lodash": "^4.14.194",
     "@types/node": "^20.2.3",
     "@types/oauth": "^0.9.1",
-    "aws-sdk": "^2.1381.0",
+    "aws-sdk": "^2.1383.0",
     "dotenv": "^16.0.3",
     "eslint": "^8.41.0",
     "fork-ts-checker-webpack-plugin": "^8.0.0",
