@@ -2,6 +2,7 @@
 // eslint-disable-next-line no-unused-vars
 import type {APIGatewayProxyHandler} from 'aws-lambda';
 import 'source-map-support/register.js';
+import get from 'lodash/get';
 import {s3} from './aws';
 import {verifyRequest} from './util';
 
@@ -36,6 +37,8 @@ export const getImages: APIGatewayProxyHandler = async (event) => {
 			h: parseInt(item.Metadata.height),
 		};
 	});
+
+	const origin = get(event, ['headers', 'origin'], '');
 
 	return {
 		statusCode: 200,
