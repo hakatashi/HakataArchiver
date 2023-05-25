@@ -45,12 +45,22 @@ for media_object in s3.Bucket('hakataarchive').objects.all():
     image_format = input_image.format
     width, height = input_image.size
 
-    if input_image.mode != 'RGB':
-        input_image = input_image.convert('RGB')
+    try:
+        if input_image.mode != 'RGB':
+            input_image = input_image.convert('RGB')
+    except Exception as e:
+        print('Image conversion failed')
+        print(e)
+        continue
 
     print('Tagging image...')
 
-    tags_obj = get_tags(input_image, threshold = 0.05)
+    try:
+        tags_obj = get_tags(input_image, threshold = 0.05)
+    except Exception as e:
+        print('Image tagging failed')
+        print(e)
+        continue
 
     print('Uploading tags to Firestore...')
 
