@@ -6,6 +6,8 @@ import io
 import hashlib
 from tagger import get_tags
 
+Image.MAX_IMAGE_PIXELS = None
+
 def normalize_key(key):
     return key.replace('/', '+')
 
