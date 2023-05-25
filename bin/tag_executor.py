@@ -3,10 +3,14 @@ import firebase_admin
 from firebase_admin import firestore
 import boto3
 import io
+import hashlib
 from tagger import get_tags
 
 def normalize_key(key):
     return key.replace('/', '+')
+
+def md5(string):
+    return hashlib.md5(string.encode('utf-8')).hexdigest()
 
 app = firebase_admin.initialize_app()
 db = firestore.client()
@@ -71,4 +75,11 @@ for media_object in s3.Bucket('hakataarchive').objects.all():
         'format': image_format,
         'width': width,
         'height': height,
+    }, merge=True)
+
+    hash = md5(normalized_key)
+    hash_prefix = hash[:2]
+
+    db.collection('media_hashset').document(hash_prefix).set({
+        hash: normalized_key,
     }, merge=True)
