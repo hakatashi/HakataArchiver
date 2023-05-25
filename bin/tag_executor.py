@@ -42,6 +42,8 @@ for media_object in s3.Bucket('hakataarchive').objects.all():
         continue
 
     print('Downloaded image from S3 (format = {}, size = {}, mode = {})'.format(input_image.format, input_image.size, input_image.mode))
+    image_format = input_image.format
+    width, height = input_image.size
 
     if input_image.mode != 'RGB':
         input_image = input_image.convert('RGB')
@@ -54,4 +56,7 @@ for media_object in s3.Bucket('hakataarchive').objects.all():
 
     db.collection('media').document(normalized_key).set({
         'danbooru_tags': tags_obj,
+        'format': image_format,
+        'width': width,
+        'height': height,
     }, merge=True)
