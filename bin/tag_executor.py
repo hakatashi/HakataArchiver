@@ -15,10 +15,12 @@ s3 = boto3.resource('s3')
 
 print('Loading all documents in collection "media":')
 
-docs = db.collection('media').stream()
+docs = db.collection('media_hashset').stream()
 doc_ids = set()
 for doc in docs:
-    doc_ids.add(doc.id)
+    media = doc.to_dict()
+    for medium_hash in media:
+        doc_ids.add(media[medium_hash])
 
 print('Loaded {} documents'.format(len(doc_ids)))
 
