@@ -25,7 +25,7 @@
     "@types/lodash": "^4.14.195",
     "@types/node": "^20.2.4",
     "@types/oauth": "^0.9.1",
-    "aws-sdk": "^2.1385.0",
+    "aws-sdk": "^2.1386.0",
     "dotenv": "^16.0.3",
     "eslint": "^8.41.0",
     "firebase-admin": "^11.8.0",
