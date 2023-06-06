@@ -26,7 +26,7 @@
     "@types/node": "^20.2.5",
     "@types/oauth": "^0.9.1",
     "aws-sdk": "^2.1391.0",
-    "dotenv": "^16.1.3",
+    "dotenv": "^16.1.4",
     "eslint": "^8.42.0",
     "firebase-admin": "^11.9.0",
     "fork-ts-checker-webpack-plugin": "^8.0.0",
