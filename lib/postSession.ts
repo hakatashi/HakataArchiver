@@ -1,5 +1,4 @@
-// eslint-disable-next-line no-unused-vars
-import {APIGatewayProxyHandler} from 'aws-lambda';
+import type {APIGatewayProxyHandler} from 'aws-lambda';
 import 'source-map-support/register.js';
 import {db} from './aws';
 
