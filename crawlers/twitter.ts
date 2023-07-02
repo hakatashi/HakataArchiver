@@ -43,10 +43,10 @@ const handler: ScheduledHandler = async (_event, context) => {
 	}).promise();
 	console.log('[twitter] Uploaded item indices into S3');
 
-	for (const screenName of ['hakatashi', 'hakatashi_A', 'hakatashi_B']) {
+	for (const screenName of ['hakatashi_A']) {
 		let cursor: string = null;
 
-		for (const i of Array(10).keys()) {
+		for (const i of Array(5).keys()) {
 			await wait(200);
 			console.log(`[twitter:${screenName}:page${i}] API request with cursor ${cursor}`);
 			const rssResult = await axios.get(`https://nitter.hakatashi.com/${screenName}/favorites/rss`, {
