@@ -19,7 +19,7 @@ pillow = "^9.5.0"
 torchvision = "^0.15.2"
 torch = {version = "^2.0.1+cu117", source = "cu117"}
 boto3 = "^1.26.138"
-pyarrow = "^12.0.1"
+pyarrow = "^14.0.1"
 
 
 [[tool.poetry.source]]
