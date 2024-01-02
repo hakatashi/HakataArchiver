@@ -13,7 +13,7 @@
     "axios": "^1.6.3",
     "cheerio": "^1.0.0-rc.12",
     "concat-stream": "^2.0.0",
-    "image-size": "^1.1.0",
+    "image-size": "^1.1.1",
     "lodash": "^4.17.21",
     "oauth": "^0.10.0",
     "source-map-support": "^0.5.21",
