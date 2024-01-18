@@ -9,7 +9,7 @@
     "fanbox": "serverless invoke local -f crawlFanbox"
   },
   "dependencies": {
-    "async-mutex": "^0.4.0",
+    "async-mutex": "^0.4.1",
     "axios": "^1.6.5",
     "cheerio": "^1.0.0-rc.12",
     "concat-stream": "^2.0.0",
