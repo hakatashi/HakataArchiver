@@ -31,7 +31,7 @@
     "aws-lambda": "^1.0.7",
     "aws-sdk": "^2.1613.0",
     "dotenv": "^16.4.5",
-    "eslint": "^9.1.1",
+    "eslint": "^9.2.0",
     "firebase-admin": "^12.1.0",
     "scrape-it": "^6.1.2",
     "serverless-webpack": "^5.13.0",
