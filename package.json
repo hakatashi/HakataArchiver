@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "async-mutex": "^0.5.0",
-    "axios": "^1.7.1",
+    "axios": "^1.7.2",
     "cheerio": "^1.0.0-rc.12",
     "concat-stream": "^2.0.0",
     "image-size": "^1.1.1",
