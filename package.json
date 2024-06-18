@@ -34,7 +34,7 @@
     "eslint": "^9.5.0",
     "firebase-admin": "^12.1.1",
     "scrape-it": "^6.1.2",
-    "serverless-webpack": "^5.14.0",
+    "serverless-webpack": "^5.14.1",
     "ts-loader": "^9.5.1",
     "typescript": "^5.4.5",
     "webpack": "^5.92.0",
