@@ -32,7 +32,7 @@
     "aws-sdk": "^2.1645.0",
     "dotenv": "^16.4.5",
     "eslint": "^9.5.0",
-    "firebase-admin": "^12.1.1",
+    "firebase-admin": "^12.2.0",
     "scrape-it": "^6.1.2",
     "serverless-webpack": "^5.14.1",
     "ts-loader": "^9.5.1",
