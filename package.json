@@ -22,7 +22,7 @@
     "xpath-ts": "^1.3.13"
   },
   "devDependencies": {
-    "@hakatashi/eslint-config": "^1.20.0",
+    "@hakatashi/eslint-config": "^2.1.1",
     "@types/aws-lambda": "^8.10.145",
     "@types/cheerio": "^0.22.35",
     "@types/lodash": "^4.17.13",
