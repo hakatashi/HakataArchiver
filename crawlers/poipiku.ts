@@ -1,6 +1,5 @@
 import path from 'path';
 import qs from 'querystring';
-import {PassThrough} from 'stream';
 import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
@@ -135,7 +134,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 		}
 
-		if (workIds.length === 0) {
+		if (stop || workIds.length === 0) {
 			break;
 		}
 
