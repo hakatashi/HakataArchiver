@@ -1,18 +1,41 @@
 /* global BigInt */
 
 import * as path from 'path';
-import {inspect} from 'util';
-// eslint-disable-next-line no-unused-vars
-import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import 'source-map-support/register.js';
-import {DOMParserImpl, NodeImpl} from 'xmldom-ts';
-import * as xpath from 'xpath-ts';
 import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
-const handler: ScheduledHandler = async (_event, context) => {
+interface VxtwitterApiData {
+	conversationID: string,
+	date: string,
+	date_epoch: number,
+	hasMedia: boolean,
+	hashtags: string[],
+	lang: string,
+	likes: number,
+	mediaURLs: string[],
+	media_extended: {
+		size: {
+			height: number,
+			width: number,
+		},
+		thumbnail_url: string,
+		type: string,
+		url: string,
+	}[],
+	replies: number,
+	retweets: number,
+	text: string,
+	tweetID: string,
+	tweetURL: string,
+	user_name: string,
+	user_profile_image_url: string,
+	user_screen_name: string,
+}
+
+const crawlTweet = async (urlString: string) => {
 	// Retrieve index/twitter.json from S3
 	const existingIndex = await s3.getObject({
 		Bucket: 'hakataarchive',
@@ -27,125 +50,86 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 	console.log(`[twitter] Retrieved ${existingIds.size} ids in total`);
 
-	for (const screenName of ['hakatashi_A']) {
-		let cursor: string = null;
+	const vxtwitterUrl = new URL(urlString);
+	vxtwitterUrl.hostname = 'api.vxtwitter.com';
 
-		for (const i of Array(5).keys()) {
-			await wait(200);
-			console.log(`[twitter:${screenName}:page${i}] API request with cursor ${cursor}`);
-			const rssResult = await axios.get(`https://nitter.hakatashi.com/${screenName}/favorites/rss`, {
-				params: {
-					...(cursor === null ? {} : {cursor}),
-				},
-			});
-
-			if (rssResult.status !== 200) {
-				throw new Error(`[twitter:${screenName}] API request failed with status ${rssResult.status}`);
-			}
-
-			cursor = rssResult.headers['min-id'];
-
-			const doc = new DOMParserImpl().parseFromString(rssResult.data);
-			const items = xpath.select('/rss/channel/item', doc);
-
-			if (!Array.isArray(items)) {
-				throw new Error(`[twitter:${screenName}] API response is not an array`);
-			}
-
-			console.log(`[twitter:${screenName}] API response with ${items.length} tweets`);
-
-			for (const item of items) {
-				const remainingTime = context.getRemainingTimeInMillis();
-				if (remainingTime <= 60 * 1000) {
-					console.log(`Remaining time (${remainingTime}ms) is short. Giving up...`);
-					break;
-				}
-
-				const link = xpath.select1('link', item);
-				const pubDate = xpath.select1('pubDate', item);
-				const title = xpath.select1('title', item);
-				const description = xpath.select1('description', item);
-				const dcCreator = xpath.select1('dc:creator', item);
-
-				if (
-					!(link instanceof NodeImpl) ||
-					!(pubDate instanceof NodeImpl) ||
-					!(title instanceof NodeImpl) ||
-					!(description instanceof NodeImpl) ||
-					!(dcCreator instanceof NodeImpl)
-				) {
-					console.error(`[twitter:${screenName}] API response has invalid format`);
-					continue;
-				}
-
-				const url = link.textContent;
-				const createdTimeString = pubDate.textContent;
-				const text = title.textContent;
-				const descriptionString = description.textContent;
-				const creator = dcCreator.textContent.replaceAll(/@/g, '');
-
-				const createdTime = new Date(createdTimeString);
-				const idStr = url.match(/\/status\/(?<id>\d+)/)?.groups?.id;
-
-				if (existingIds.has(idStr)) {
-					continue;
-				}
-
-				existingIds.add(idStr);
-
-				if (!idStr) {
-					console.error(`[twitter:${screenName}] API response has invalid format`);
-					continue;
-				}
-
-				console.log(`[twitter:${screenName}] ${createdTime} ${url} ${descriptionString}`);
-
-				const imageUrlMatches = Array.from(descriptionString.matchAll(
-					/(?<url>http:\/\/nitter\.hakatashi\.com\/pic\/[^"]+)/g,
-				));
-
-				console.log(`[twitter:${screenName}] Found ${imageUrlMatches.length} images`);
-
-				for (const {groups: {url: imageUrl}} of imageUrlMatches) {
-					const encodedFilename = path.posix.basename(imageUrl);
-					const filename = decodeURIComponent(encodedFilename).split('/')[1];
-
-					if (!filename) {
-						console.error(`[twitter:${screenName}] API response has invalid format ${imageUrl}`);
-						continue;
-					}
-
-					console.log(`Saving ${filename}...`);
-
-					const origImageUrl = imageUrl
-						.replace('http://', 'https://')
-						.replace('/pic/', '/pic/orig/');
-
-					await wait(200);
-					const {data: imageData} = await axios.get<Buffer>(origImageUrl, {
-						responseType: 'arraybuffer',
-					});
-
-					await uploadImage(imageData, `twitter/${filename}`);
-					await incrementCounter('TwitterImageSaved');
-				}
-
-				await db.put({
-					TableName: 'hakataarchive-entries-twitter',
-					Item: {
-						id_str: idStr,
-						created_at: createdTime.toISOString(),
-						text,
-						user: {
-							screen_name: creator,
-						},
-						nitterDescription: descriptionString,
-					},
-				}).promise();
-				await incrementCounter('TweetsSaved');
-			}
-		}
+	const {data: tweetData, headers} = await axios.get<VxtwitterApiData>(vxtwitterUrl.toString());
+	if (headers['content-type'] !== 'application/json') {
+		throw new Error(`[twitter] API response has invalid content type ${headers['content-type']}`);
 	}
+
+	if (existingIds.has(tweetData.tweetID)) {
+		console.log(`[twitter] ${tweetData.tweetID} is already saved`);
+		return;
+	}
+
+	existingIds.add(tweetData.tweetID);
+
+	console.log(`[twitter] Found ${tweetData.media_extended.length} images`);
+
+	for (const medium of tweetData.media_extended) {
+		const filename = path.posix.basename(medium.url);
+		console.log(`Saving ${filename}...`);
+
+		await wait(200);
+		const {data: imageData} = await axios.get<Buffer>(medium.url, {
+			params: {
+				name: 'orig',
+			},
+			responseType: 'arraybuffer',
+		});
+
+		await uploadImage(imageData, `twitter/${filename}`);
+		await incrementCounter('TwitterImageSaved');
+	}
+
+	await db.put({
+		TableName: 'hakataarchive-entries-twitter',
+		Item: {
+			id_str: tweetData.tweetID,
+			id: parseInt(tweetData.tweetID),
+			created_at: tweetData.date,
+			lang: tweetData.lang,
+			entities: {
+				hashtags: tweetData.hashtags.map((tag) => ({text: tag})),
+				media: tweetData.media_extended.map((medium) => ({
+					media_url: medium.url,
+					media_url_https: medium.url,
+					type: medium.type === 'image' ? 'photo' : medium.type,
+					sizes: {
+						large: {
+							h: medium.size.height,
+							resize: 'fit',
+							w: medium.size.width,
+						},
+					},
+				})),
+			},
+			extended_entities: {
+				media: tweetData.media_extended.map((medium) => ({
+					media_url: medium.url,
+					media_url_https: medium.url,
+					type: medium.type === 'image' ? 'photo' : medium.type,
+					sizes: {
+						large: {
+							h: medium.size.height,
+							resize: 'fit',
+							w: medium.size.width,
+						},
+					},
+				})),
+			},
+			favorite_count: tweetData.likes,
+			retweet_count: tweetData.retweets,
+			text: tweetData.text,
+			user: {
+				name: tweetData.user_name,
+				screen_name: tweetData.user_screen_name,
+				profile_image_url: tweetData.user_profile_image_url,
+			},
+		},
+	}).promise();
+	await incrementCounter('TweetsSaved');
 
 	await s3.upload({
 		Bucket: 'hakataarchive',
@@ -156,4 +140,4 @@ const handler: ScheduledHandler = async (_event, context) => {
 	console.log('[twitter] Uploaded new item indices into S3');
 };
 
-export default handler;
+export default crawlTweet;
