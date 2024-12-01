@@ -13,35 +13,19 @@ import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
 const handler: ScheduledHandler = async (_event, context) => {
-	// Retrieve all existing ids of database
-	const existingIds = new Set();
-	let lastKey = null;
-	while (lastKey !== undefined) {
-		await wait(1000);
-		const existingEntries = await db.scan({
-			TableName: 'hakataarchive-entries-twitter',
-			ProjectionExpression: 'id_str',
-			ReturnConsumedCapacity: 'INDEXES',
-			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
-		}).promise();
-		console.log(`[twitter] Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
-		console.log(`[twitter] Consumed capacity: ${existingEntries.ConsumedCapacity.CapacityUnits}`);
-
-		lastKey = existingEntries.LastEvaluatedKey;
-
-		for (const item of existingEntries.Items) {
-			existingIds.add(item.id_str);
-		}
-	}
-
-	console.log(`[twitter] Retrieved ${existingIds.size} ids in total`);
-
-	await s3.upload({
+	// Retrieve index/twitter.json from S3
+	const existingIndex = await s3.getObject({
 		Bucket: 'hakataarchive',
 		Key: 'index/twitter.json',
-		Body: JSON.stringify(Array.from(existingIds)),
 	}).promise();
-	console.log('[twitter] Uploaded item indices into S3');
+
+	if (!existingIndex.Body) {
+		throw new Error('[twitter] Failed to retrieve existing index from S3');
+	}
+
+	const existingIds = new Set(JSON.parse(existingIndex.Body.toString()));
+
+	console.log(`[twitter] Retrieved ${existingIds.size} ids in total`);
 
 	for (const screenName of ['hakatashi_A']) {
 		let cursor: string = null;
@@ -107,6 +91,8 @@ const handler: ScheduledHandler = async (_event, context) => {
 					continue;
 				}
 
+				existingIds.add(idStr);
+
 				if (!idStr) {
 					console.error(`[twitter:${screenName}] API response has invalid format`);
 					continue;
@@ -160,6 +146,14 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}
 		}
 	}
+
+	await s3.upload({
+		Bucket: 'hakataarchive',
+		Key: 'index/twitter.json',
+		Body: JSON.stringify(Array.from(existingIds)),
+	}).promise();
+
+	console.log('[twitter] Uploaded new item indices into S3');
 };
 
 export default handler;

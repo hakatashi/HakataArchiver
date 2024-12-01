@@ -3,7 +3,6 @@ import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
 import {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
-import get from 'lodash/get';
 import 'source-map-support/register.js';
 import {db, incrementCounter, s3, uploadImage} from '../lib/aws';
 
@@ -29,43 +28,22 @@ interface BookmarksResponse {
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
 
 const handler: ScheduledHandler = async (_event, context) => {
-	// Retrieve all existing ids of database
-	let lastKey = null;
-	const existingIds = new Set();
-	const publicIds = new Set();
-	const privateIds = new Set();
-	while (lastKey !== undefined) {
-		await wait(5000);
-		const existingEntries = await db.scan({
-			TableName: 'hakataarchive-entries-pixiv',
-			ProjectionExpression: 'id,bookmarkData',
-			ReturnConsumedCapacity: 'INDEXES',
-			...(lastKey === null ? {} : {ExclusiveStartKey: lastKey}),
-		}).promise();
-		console.log(`[pixiv] Retrieved ${existingEntries.Items.length} existing entries (ExclusiveStartKey = ${inspect(lastKey)})`);
-		console.log(`[pixiv] Consumed capacity: ${inspect(existingEntries.ConsumedCapacity)}`);
-
-		lastKey = existingEntries.LastEvaluatedKey;
-
-		for (const item of existingEntries.Items) {
-			const isPrivate = get(item, ['bookmarkData', 'private'], false);
-			existingIds.add(item.id);
-			if (isPrivate) {
-				privateIds.add(item.id);
-			} else {
-				publicIds.add(item.id);
-			}
-		}
-	}
-
-	console.log(`[pixiv] Retrieved ${existingIds.size} ids in total`);
-
-	await s3.upload({
+	// Retrieve index/pixiv.json from S3
+	const existingIndex = await s3.getObject({
 		Bucket: 'hakataarchive',
 		Key: 'index/pixiv.json',
-		Body: JSON.stringify({public: Array.from(publicIds), private: Array.from(privateIds)}),
 	}).promise();
-	console.log('[pixiv] Uploaded item indices into S3');
+
+	if (!existingIndex.Body) {
+		throw new Error('[pixiv] Failed to retrieve existing index from S3');
+	}
+
+	const existingIndexData = JSON.parse(existingIndex.Body.toString());
+	const publicIds = new Set(existingIndexData.public);
+	const privateIds = new Set(existingIndexData.private);
+	const existingIds = new Set([...publicIds, ...privateIds]);
+
+	console.log(`[pixiv] Retrieved ${existingIds.size} ids in total`);
 
 	const sessionData = await db.get({
 		TableName: 'hakataarchive-sessions',
@@ -104,7 +82,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 
 			const {works} = data.body;
 
-			console.log(`[pixiv:${visibility}:offset=${offset}] API response with ${works.length} tweets`);
+			console.log(`[pixiv:${visibility}:offset=${offset}] API response with ${works.length} works`);
 
 			if (works.length === 0) {
 				break;
@@ -175,6 +153,14 @@ const handler: ScheduledHandler = async (_event, context) => {
 				await incrementCounter('PixivImageSaved');
 			}
 
+			existingIds.add(work.id);
+
+			if (visibility === 'show') {
+				publicIds.add(work.id);
+			} else {
+				privateIds.add(work.id);
+			}
+
 			await db.put({
 				TableName: 'hakataarchive-entries-pixiv',
 				Item: {
@@ -184,6 +170,13 @@ const handler: ScheduledHandler = async (_event, context) => {
 			}).promise();
 		}
 	}
+
+	await s3.upload({
+		Bucket: 'hakataarchive',
+		Key: 'index/pixiv.json',
+		Body: JSON.stringify({public: Array.from(publicIds), private: Array.from(privateIds)}),
+	}).promise();
+	console.log('[pixiv] Uploaded item indices into S3');
 };
 
 export default handler;
