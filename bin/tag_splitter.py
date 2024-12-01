@@ -20,8 +20,16 @@ dataset_dict = dataset_dict.cast_column('class', ClassLabel(num_classes=3, names
 
 print(dataset_dict.shape)
 print(dataset_dict['train'].features)
-
 print(dataset_dict.unique('class'))
 
-dataset_dict.push_to_hub('hakatashi/hakatashi-pixiv-bookmark-deepdanbooru')
+dataset_dict.push_to_hub('hakatashi/hakatashi-pixiv-bookmark-deepdanbooru-private')
+
+# NOTE: remove_columns is mutable method
+public_dataset_dict = dataset_dict.remove_columns(['key'])
+
+print(public_dataset_dict.shape)
+print(public_dataset_dict['train'].features)
+print(public_dataset_dict.unique('class'))
+
+public_dataset_dict.push_to_hub('hakatashi/hakatashi-pixiv-bookmark-deepdanbooru')
 
