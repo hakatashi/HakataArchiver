@@ -62,10 +62,7 @@ interface CreatorsItem {
 
 interface ItemsResponse {
 	data: {
-		body: {
-			items: Item[],
-			nextUrl: string,
-		},
+		body: Item[],
 	},
 }
 
@@ -75,11 +72,17 @@ interface ItemResponse {
 	},
 }
 
+interface PaginateCreatorResponse {
+	data: {
+		body: string[],
+	},
+}
+
 // :innocent:
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
 
 async function* iterateAllHistory(session: string) {
-	console.log('[fanbox] Getting list of followers...');
+	console.log(`[fanbox] Getting list of followers... (session = ${session})`);
 	await wait(1000);
 	const {data: {body: followers}}: CreatorResponse = await axios.get('https://api.fanbox.cc/creator.listFollowing', {
 		headers: {
@@ -104,12 +107,12 @@ async function* iterateAllHistory(session: string) {
 	console.log(`[fanbox] Retrieved ${supportings.length} supportings.`);
 
 	for (const creator of [...followers, ...supportings]) {
-		console.log(`[fanbox] Getting posts from creator ${creator.creatorId}...`);
+		console.log(`[fanbox] Generating pagination URLs of creator ${creator}...`);
+
 		await wait(1000);
-		const {data: {body}}: ItemsResponse = await axios.get('https://api.fanbox.cc/post.listCreator', {
+		const {data: {body: pagenationUrls}}: PaginateCreatorResponse = await axios.get('https://api.fanbox.cc/post.paginateCreator', {
 			params: {
-				creatorId: creator.creatorId,
-				limit: PER_PAGE,
+				creatorId: creator,
 			},
 			headers: {
 				'User-Agent': USER_AGENT,
@@ -117,27 +120,23 @@ async function* iterateAllHistory(session: string) {
 				Cookie: `FANBOXSESSID=${session}`,
 			},
 		});
-		console.log(`[fanbox] Retrieved ${body.items.length} posts from creator ${creator.creatorId}.`);
 
-		for (const item of body.items) {
-			yield item;
-		}
+		console.log(`[fanbox] Getting posts from creator ${creator}...`);
 
-		let nextPageUrl = body.nextUrl;
-		while (nextPageUrl) {
-			console.log(`[fanbox] Getting posts from creator ${creator.creatorId}... (params = ${new URL(nextPageUrl).search})`);
+		for (const url of pagenationUrls) {
+			console.log(`[fanbox] Getting posts from creator ${creator}... (url = ${url})`);
+
 			await wait(1000);
-			const {data: {body: nextBody}}: ItemsResponse = await axios.get(nextPageUrl, {
+			const {data: {body: items}}: ItemsResponse = await axios.get(url, {
 				headers: {
 					'User-Agent': USER_AGENT,
 					Origin: 'https://www.fanbox.cc',
 					Cookie: `FANBOXSESSID=${session}`,
 				},
 			});
-			console.log(`[fanbox] Retrieved ${nextBody.items.length} posts from creator ${creator.creatorId}.`);
+			console.log(`[fanbox] Retrieved ${items.length} posts from creator ${creator}.`);
 
-			nextPageUrl = nextBody.nextUrl;
-			for (const item of nextBody.items) {
+			for (const item of items) {
 				yield item;
 			}
 		}
@@ -279,6 +278,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 		if (existingIds.has(postSummary.id)) {
 			const isRestricted = existingIds.get(postSummary.id);
 			if (!isRestricted || postSummary.isRestricted) {
+				console.log(`[fanbox] Skipping post... (id = ${postSummary.id})`);
 				continue;
 			}
 		}
