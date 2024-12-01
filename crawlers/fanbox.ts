@@ -254,7 +254,7 @@ const handler: ScheduledHandler = async (_event, context) => {
 	await s3.upload({
 		Bucket: 'hakataarchive',
 		Key: 'index/fanbox.json',
-		Body: JSON.stringify(Array.from(existingIds.keys())),
+		Body: JSON.stringify(Object.fromEntries(existingIds)),
 	}).promise();
 	console.log('[fanbox] Uploaded item indices into S3');
 
