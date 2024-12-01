@@ -11,10 +11,10 @@ jobs:
     - uses: actions/checkout@master
     - uses: actions/setup-node@master
       with:
-        node-version: 16.x
+        node-version: 22.x
     - run: npm install
     - name: serverless deploy
-      uses: serverless/github-action@v3.1
+      uses: serverless/github-action@v3.2
       with:
         args: deploy --stage production
       env:
