@@ -31,7 +31,7 @@
     "@types/oauth": "^0.9.6",
     "aws-lambda": "^1.0.7",
     "dotenv": "^16.6.1",
-    "eslint": "^9.29.0",
+    "eslint": "^9.30.0",
     "firebase-admin": "^13.4.0",
     "scrape-it": "^6.1.5",
     "serverless-webpack": "^5.15.1",
