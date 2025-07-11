@@ -37,7 +37,7 @@
     "serverless-webpack": "^5.15.2",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
-    "webpack": "^5.100.0",
+    "webpack": "^5.100.1",
     "webpack-node-externals": "^3.0.0"
   },
   "author": "hakatashi (Koki Takahashi)",
