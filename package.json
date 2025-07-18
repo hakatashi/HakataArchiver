@@ -33,7 +33,7 @@
     "dotenv": "^17.2.0",
     "eslint": "^9.31.0",
     "firebase-admin": "^13.4.0",
-    "scrape-it": "^6.1.5",
+    "scrape-it": "^6.1.11",
     "serverless-webpack": "^5.15.2",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
