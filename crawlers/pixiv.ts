@@ -1,7 +1,7 @@
 import * as path from 'path';
 import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
-import {ScheduledHandler} from 'aws-lambda';
+import type {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
 import 'source-map-support/register.js';
 import {db, incrementCounter, s3, uploadImage} from '../lib/aws';

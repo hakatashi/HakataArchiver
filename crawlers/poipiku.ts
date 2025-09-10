@@ -2,13 +2,14 @@ import path from 'path';
 import qs from 'querystring';
 import {inspect} from 'util';
 // eslint-disable-next-line no-unused-vars
-import {ScheduledHandler} from 'aws-lambda';
+import type {ScheduledHandler} from 'aws-lambda';
 import axios from 'axios';
-import cheerio from 'cheerio';
 import get from 'lodash/get';
 import last from 'lodash/last';
 import 'source-map-support/register.js';
 import {db, s3, incrementCounter, uploadImage} from '../lib/aws';
+
+const cheerio = require('cheerio');
 
 const wait = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
