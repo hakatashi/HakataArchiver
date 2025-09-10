@@ -14,7 +14,7 @@ jobs:
         node-version: 22.x
     - run: npm install
     - name: serverless deploy
-      uses: serverless/github-action@v3.2
+      uses: serverless/github-action@v4
       with:
         args: deploy --stage production
       env:
