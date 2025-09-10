@@ -27,7 +27,7 @@ interface BookmarksResponse {
 // :innocent:
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
 
-const handler: ScheduledHandler = async (_event, context) => {
+export const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve index/pixiv.json from S3
 	const existingIndex = await s3.getObject({
 		Bucket: 'hakataarchive',
@@ -178,5 +178,3 @@ const handler: ScheduledHandler = async (_event, context) => {
 	}).promise();
 	console.log('[pixiv] Uploaded item indices into S3');
 };
-
-export default handler;

@@ -192,7 +192,7 @@ async function* iterateHome(session: string, existingIds: Map<string, boolean>) 
 	}
 }
 
-const handler: ScheduledHandler = async (_event, context) => {
+export const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
 	const existingIds = new Map<string, boolean>();
@@ -400,5 +400,3 @@ const handler: ScheduledHandler = async (_event, context) => {
 		}).promise();
 	}
 };
-
-export default handler;

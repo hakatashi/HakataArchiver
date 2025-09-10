@@ -29,7 +29,7 @@ interface BookmarksResponse {
 // :innocent:
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.190 Safari/537.36';
 
-const handler: ScheduledHandler = async (_event, context) => {
+export const handler: ScheduledHandler = async (_event, context) => {
 	// Retrieve all existing ids of database
 	let lastKey = null;
 	const existingIds = new Set();
@@ -225,5 +225,3 @@ const handler: ScheduledHandler = async (_event, context) => {
 		}).promise();
 	}
 };
-
-export default handler;

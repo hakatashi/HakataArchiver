@@ -25,5 +25,3 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 		body: 'ok',
 	};
 };
-
-export default handler;

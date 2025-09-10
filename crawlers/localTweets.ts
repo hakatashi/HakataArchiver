@@ -37,7 +37,7 @@ interface VxtwitterApiData {
 	user_screen_name: string,
 }
 
-const crawlLocalTweets: ScheduledHandler = async () => {
+export const handler: ScheduledHandler = async () => {
 	// Retrieve index/twitter.json from S3
 	const existingIndex = await s3.getObject({
 		Bucket: 'hakataarchive',
@@ -147,6 +147,3 @@ const crawlLocalTweets: ScheduledHandler = async () => {
 
 	console.log(`Found ${newTweetsCount} new tweets`);
 };
-
-export default crawlLocalTweets;
-

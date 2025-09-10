@@ -2,15 +2,9 @@ service: hakataarchiver
 
 custom:
   defaultStage: dev
-  webpack:
-    webpackConfig: ./webpack.config.js
-    includeModules: true
   productionOnly:
     dev: false
     production: true
-
-plugins:
-  - serverless-webpack
 
 provider:
   name: aws
@@ -35,21 +29,21 @@ provider:
 
 functions:
   crawlPixiv:
-    handler: crawlers/pixiv.default
+    handler: crawlers/pixiv.handler
     events:
       - schedule:
           rate: cron(17 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
   crawlPoipiku:
-    handler: crawlers/poipiku.default
+    handler: crawlers/poipiku.handler
     events:
       - schedule:
           rate: cron(51 * * * ? *)
           enabled: ${self:custom.productionOnly.${self:provider.stage}}
     timeout: 900
   crawlFanbox:
-    handler: crawlers/fanbox.default
+    handler: crawlers/fanbox.handler
     events:
       - schedule:
           rate: cron(8 * * * ? *)
@@ -57,7 +51,7 @@ functions:
     timeout: 900
     memorySize: 1024
   crawlLocalTweets:
-    handler: crawlers/localTweets.default
+    handler: crawlers/localTweets.handler
     events:
       - schedule:
           rate: cron(0 * * * ? *)
@@ -65,13 +59,13 @@ functions:
     timeout: 900
     memorySize: 1024
   postSession:
-    handler: lib/postSession.default
+    handler: lib/postSession.handler
     events:
       - http:
           method: post
           path: post-session
   postTwitterLike:
-    handler: lib/postTwitterLike.default
+    handler: lib/postTwitterLike.handler
     events:
       - http:
           method: post
