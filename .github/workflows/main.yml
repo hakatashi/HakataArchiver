@@ -12,7 +12,7 @@ jobs:
     - uses: actions/setup-node@master
       with:
         node-version: 22.x
-    - run: npm install
+    - run: npm ci
     - name: serverless deploy
       uses: serverless/github-action@v4
       with:
