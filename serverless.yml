@@ -16,7 +16,7 @@ provider:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
-    HAKATASHI_API_KEY: ${env:HAKATASHI_API_KEY, "test_hakatashi_api_key"}
+    HAKATASHI_API_KEY: ${env:HAKATASHI_API_KEY}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -26,6 +26,11 @@ provider:
   iamManagedPolicies:
     - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
     - "arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy"
+
+build:
+  esbuild:
+    external:
+      - aws-sdk
 
 functions:
   crawlPixiv:
