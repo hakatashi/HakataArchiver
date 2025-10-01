@@ -33,7 +33,7 @@
     "eslint": "^9.36.0",
     "firebase-admin": "^13.5.0",
     "scrape-it": "^6.1.11",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   },
   "author": "hakatashi (Koki Takahashi)",
   "license": "MIT"
