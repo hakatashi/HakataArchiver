@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@hakatashi/eslint-config": "^2.1.1",
-    "@types/aws-lambda": "^8.10.159",
+    "@types/aws-lambda": "^8.10.160",
     "@types/cheerio": "^1.0.0",
     "@types/lodash": "^4.17.23",
     "@types/node": "^25.0.9",
