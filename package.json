@@ -15,7 +15,7 @@
     "cheerio": "^1.1.2",
     "concat-stream": "^2.0.0",
     "image-size": "^2.0.2",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "oauth": "^0.10.2",
     "source-map-support": "^0.5.21",
     "unzipper": "^0.12.3",
