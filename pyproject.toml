@@ -15,7 +15,7 @@ firebase-admin = "^6.0.1"
 datasets = "^2.14.3"
 evaluate = "^0.4.0"
 transformers = {git = "https://github.com/huggingface/transformers"}
-pillow = "^10.3.0"
+pillow = "^12.1.1"
 torchvision = "^0.15.2"
 torch = {version = "^2.0.1+cu117", source = "cu117"}
 boto3 = "^1.26.138"
