@@ -29,7 +29,7 @@
     "@types/node": "^25.6.0",
     "@types/oauth": "^0.9.6",
     "aws-lambda": "^1.0.7",
-    "dotenv": "^17.4.1",
+    "dotenv": "^17.4.2",
     "eslint": "^10.2.0",
     "firebase-admin": "^13.8.0",
     "scrape-it": "^6.1.12",
