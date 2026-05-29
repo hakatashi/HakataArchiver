@@ -30,7 +30,7 @@
     "@types/oauth": "^0.9.6",
     "aws-lambda": "^1.0.7",
     "dotenv": "^17.4.2",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "firebase-admin": "^13.10.0",
     "scrape-it": "^6.1.12",
     "typescript": "^6.0.3"
