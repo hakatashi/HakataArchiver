@@ -31,7 +31,7 @@
     "aws-lambda": "^1.0.7",
     "dotenv": "^17.4.2",
     "eslint": "^10.7.0",
-    "firebase-admin": "^14.1.0",
+    "firebase-admin": "^14.2.0",
     "scrape-it": "^6.1.14",
     "typescript": "^7.0.2"
   },
