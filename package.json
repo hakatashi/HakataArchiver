@@ -32,7 +32,7 @@
     "dotenv": "^18.0.1",
     "eslint": "^10.11.0",
     "firebase-admin": "^14.4.0",
-    "scrape-it": "^6.1.14",
+    "scrape-it": "^6.1.15",
     "typescript": "^7.0.2"
   },
   "author": "hakatashi (Koki Takahashi)",
